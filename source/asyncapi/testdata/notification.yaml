@@ -1,0 +1,359 @@
+asyncapi: 3.0.0
+
+info:
+  title: Notification Service
+  version: 1.0.0
+  description: |
+    A service that handles user notifications, preferences, and interactions.
+    Supports real-time notifications, user preferences management.
+
+channels:
+  notification.user.{user_id}.push:
+    address: notification.user.{user_id}.push
+    parameters:
+      user_id:
+        description: ID of the user receiving the notification
+    messages:
+      PushNotification:
+        $ref: '#/components/messages/PushNotification'
+
+  notification.preferences.update:
+    address: notification.preferences.update
+    messages:
+      PreferencesUpdate:
+        $ref: '#/components/messages/PreferencesUpdate'
+
+  notification.preferences.get:
+    address: notification.preferences.get
+    parameters:
+      user_id:
+        description: ID of the user receiving the preferences
+    messages:
+      PreferencesRequest:
+        $ref: '#/components/messages/PreferencesRequest'
+      PreferencesReply:
+        $ref: '#/components/messages/PreferencesReply'
+
+  user.info.request:
+    address: user.info.request
+    parameters:
+      user_id:
+        description: ID of the user to request information for
+    messages:
+      UserInfoRequest:
+        $ref: '#/components/messages/UserInfoRequest'
+      UserInfoReply:
+        $ref: '#/components/messages/UserInfoReply'
+
+  notification.analytics:
+    address: notification.analytics
+    messages:
+      AnalyticsEvent:
+        $ref: '#/components/messages/AnalyticsEvent'
+
+operations:
+  receivePushNotification:
+    action: receive
+    channel:
+      $ref: '#/channels/notification.user.{user_id}.push'
+    summary: Receive a message to send a push notification to a specific user
+    messages:
+      - $ref: '#/channels/notification.user.{user_id}.push/messages/PushNotification'
+
+  receivePreferencesUpdate:
+    action: receive
+    channel:
+      $ref: '#/channels/notification.preferences.update'
+    summary: Receive user preferences updates
+    messages:
+      - $ref: '#/channels/notification.preferences.update/messages/PreferencesUpdate'
+
+  replyPreferences:
+    action: receive
+    channel:
+      $ref: '#/channels/notification.preferences.get'
+    summary: Receive user preferences updates
+    messages:
+      - $ref: '#/channels/notification.preferences.get/messages/PreferencesRequest'
+    reply:
+      channel:
+        $ref: '#/channels/notification.preferences.get'
+      messages:
+        - $ref: '#/channels/notification.preferences.get/messages/PreferencesReply'
+
+  sendAnalytics:
+    action: send
+    channel:
+      $ref: '#/channels/notification.analytics'
+    summary: Publish analytics events
+    messages:
+      - $ref: '#/channels/notification.analytics/messages/AnalyticsEvent'
+
+  requestUserInfo:
+    action: send
+    channel:
+      $ref: '#/channels/user.info.request'
+    summary: Request user information from user service
+    messages:
+      - $ref: '#/channels/user.info.request/messages/UserInfoRequest'
+    reply:
+      channel:
+        $ref: '#/channels/user.info.request'
+      messages:
+        - $ref: '#/channels/user.info.request/messages/UserInfoReply'
+
+components:
+  messages:
+    PushNotification:
+      name: PushNotification
+      title: Push Notification Message
+      summary: Message for sending push notifications to users
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          notification_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the notification
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user receiving the notification
+          title:
+            type: string
+            description: Notification title
+          body:
+            type: string
+            description: Notification body
+          priority:
+            type: string
+            enum: [low, normal, high]
+            default: normal
+          data:
+            type: object
+            description: Additional notification data
+          created_at:
+            type: string
+            format: date-time
+            description: When the notification was created
+        required:
+          - notification_id
+          - user_id
+          - title
+          - body
+
+    PreferencesRequest:
+      name: PreferencesRequest
+      title: Preferences Request Message
+      summary: Message for requesting user notification preferences
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+        required:
+          - user_id
+
+    PreferencesReply:
+      name: PreferencesReply
+      title: Preferences Reply Message
+      summary: Message for replying to user notification preferences
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          preferences:
+            $ref: '#/components/schemas/NotificationPreferences'
+          updated_at:
+            type: string
+            format: date-time
+            description: When the preferences were updated
+        required:
+          - preferences
+
+    PreferencesUpdate:
+      name: PreferencesUpdate
+      title: Preferences Update Message
+      summary: Message for updating user notification preferences
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          preferences:
+            $ref: '#/components/schemas/NotificationPreferences'
+          updated_at:
+            type: string
+            format: date-time
+            description: When the preferences were updated
+        required:
+          - user_id
+          - preferences
+
+    AnalyticsEvent:
+      name: AnalyticsEvent
+      title: Analytics Event Message
+      summary: Message for tracking notification-related analytics
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          event_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the event
+          event_type:
+            type: string
+            enum: [notification_sent, notification_opened, notification_clicked]
+            description: Type of the analytics event
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          notification_id:
+            type: string
+            format: uuid
+            description: ID of the related notification
+          timestamp:
+            type: string
+            format: date-time
+            description: When the event occurred
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - event_id
+          - event_type
+          - user_id
+          - timestamp
+
+    UserInfoRequest:
+      name: UserInfoRequest
+      title: User Information Request Message
+      summary: Message for requesting user information from user service
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user to request information for
+        required:
+          - user_id
+
+    UserInfoReply:
+      name: UserInfoReply
+      title: User Information Reply Message
+      summary: Message containing requested user information
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          email:
+            type: string
+            format: email
+            description: User's email address
+          name:
+            type: string
+            description: User's full name
+          language:
+            type: string
+            pattern: '^[a-z]{2}-[A-Z]{2}$'
+            description: User's preferred language (e.g., en-US)
+          timezone:
+            type: string
+            description: User's timezone (e.g., America/New_York)
+          error:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Error code
+              message:
+                type: string
+                description: Error message
+        required:
+          - user_id
+
+  schemas:
+    NotificationPreferences:
+      type: object
+      properties:
+        email_enabled:
+          type: boolean
+          default: true
+        push_enabled:
+          type: boolean
+          default: true
+        sms_enabled:
+          type: boolean
+          default: false
+        quiet_hours:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              default: false
+            start:
+              type: string
+              format: time
+              description: Start time in 24-hour format (HH:mm)
+            end:
+              type: string
+              format: time
+              description: End time in 24-hour format (HH:mm)
+          required:
+            - enabled
+        categories:
+          type: object
+          properties:
+            marketing:
+              type: boolean
+              default: true
+            updates:
+              type: boolean
+              default: true
+            security:
+              type: boolean
+              default: true
+          required:
+            - marketing
+            - updates
+            - security
+      required:
+        - email_enabled
+        - push_enabled
+        - sms_enabled
+        - categories
+
+    Metadata:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [mobile, web, api]
+          default: api
+        platform:
+          type: string
+          enum: [ios, android, web]
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        environment:
+          type: string
+          enum: [development, staging, production]
+          default: production
+      required:
+        - source
+        - environment

@@ -1,0 +1,116 @@
+{{- $hasReceiveFrom := false -}}
+{{- $hasSendTo := false -}}
+{{- $hasReplyTo := false -}}
+{{- $hasRequestFrom := false -}}
+{{- range .Services -}}
+  {{- range .Operation }}
+    {{- if and (eq .Action "receive") (not .Reply) }}
+      {{- $hasReceiveFrom = true }}
+    {{- end }}
+    {{- if and (eq .Action "send") (not .Reply) }}
+      {{- $hasSendTo = true }}
+    {{- end }}
+    {{- if and (eq .Action "receive") .Reply }}
+      {{- $hasReplyTo = true }}
+    {{- end }}
+    {{- if and (eq .Action "send") .Reply }}
+      {{- $hasRequestFrom = true }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- if $hasReceiveFrom -}}
+'Receive From': {
+{{- range .Services }}
+  {{- range .Operation }}
+    {{- if and (eq .Action "receive") (not .Reply) }}
+  '{{.Channel.Name}}': { 
+    shape: queue
+    {{- if .Channel.Message }}
+    tooltip: ||json
+{{.Channel.Message}}
+    ||
+    {{- end }}
+  }
+    {{- end }}
+  {{- end }}
+{{- end }}
+}
+{{- end }}
+
+{{- if $hasSendTo }}
+'Send To': {
+{{- range .Services }}
+  {{- range .Operation }}
+    {{- if and (eq .Action "send") (not .Reply) }}
+  '{{.Channel.Name}}': { 
+    shape: queue
+{{- if .Channel.Message }}
+    tooltip: ||json
+{{.Channel.Message}}
+    ||
+    {{- end }}
+  }
+    {{- end }}
+  {{- end }}
+{{- end }}
+}
+{{- end }}
+
+{{- if $hasReplyTo }}
+'Reply To': {
+{{- range .Services }}
+  {{- range .Operation }}
+    {{- if and (eq .Action "receive") .Reply }}
+  '{{.Channel.Name}}': { 
+    shape: queue
+    {{- if or .Channel.Message .Reply.Message }}
+    tooltip: ||json
+Request:
+{{.Channel.Message}}
+Reply:
+{{.Reply.Message}}
+    ||
+    {{- end }}
+  }
+    {{- end }}
+  {{- end }}
+{{- end }}
+}
+{{- end }}
+
+{{- if $hasRequestFrom }}
+'Request From': {
+{{- range .Services }}
+  {{- range .Operation }}
+    {{- if and (eq .Action "send") .Reply }}
+  '{{.Channel.Name}}': { 
+    shape: queue
+    {{- if or .Channel.Message .Reply.Message }}
+    tooltip: ||json
+Request:
+{{.Channel.Message}}
+Reply:
+{{.Reply.Message}}
+    ||
+    {{- end }}
+  }
+    {{- end }}
+  {{- end }}
+{{- end }}
+}
+{{- end }}
+
+{{- range .Services -}}
+{{- if $hasReceiveFrom }}
+'Receive From' -> '{{.Name}}'
+{{- end }}
+{{- if $hasSendTo }}
+'{{.Name}}' -> 'Send To'
+{{- end }}
+{{- if $hasReplyTo }}
+'Reply To' -> '{{.Name}}'
+{{- end }}
+{{- if $hasRequestFrom }}
+'{{.Name}}' -> 'Request From'
+{{- end }}
+{{- end -}}

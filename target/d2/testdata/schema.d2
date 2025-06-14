@@ -1,0 +1,117 @@
+'Receive From': {
+  'notification.preferences.update': { 
+    shape: queue
+    tooltip: ||json
+{
+  "preferences": {
+    "categories": {
+      "marketing": "boolean",
+      "security": "boolean",
+      "updates": "boolean"
+    },
+    "email_enabled": "boolean",
+    "push_enabled": "boolean",
+    "quiet_hours": {
+      "enabled": "boolean",
+      "end": "string[time]",
+      "start": "string[time]"
+    },
+    "sms_enabled": "boolean"
+  },
+  "updated_at": "string[date-time]",
+  "user_id": "string[uuid]"
+}
+    ||
+  }
+  'notification.user.{user_id}.push': { 
+    shape: queue
+    tooltip: ||json
+{
+  "body": "string",
+  "created_at": "string[date-time]",
+  "data": "object",
+  "notification_id": "string[uuid]",
+  "priority": "string[enum:low,normal,high]",
+  "title": "string",
+  "user_id": "string[uuid]"
+}
+    ||
+  }
+}
+'Send To': {
+  'notification.analytics': { 
+    shape: queue
+    tooltip: ||json
+{
+  "event_id": "string[uuid]",
+  "event_type": "string[enum:notification_sent,notification_opened,notification_clicked]",
+  "metadata": {
+    "environment": "string[enum:development,staging,production]",
+    "platform": "string[enum:ios,android,web]",
+    "source": "string[enum:mobile,web,api]",
+    "version": "string"
+  },
+  "notification_id": "string[uuid]",
+  "timestamp": "string[date-time]",
+  "user_id": "string[uuid]"
+}
+    ||
+  }
+}
+'Reply To': {
+  'notification.preferences.get': { 
+    shape: queue
+    tooltip: ||json
+Request:
+{
+  "user_id": "string[uuid]"
+}
+Reply:
+{
+  "preferences": {
+    "categories": {
+      "marketing": "boolean",
+      "security": "boolean",
+      "updates": "boolean"
+    },
+    "email_enabled": "boolean",
+    "push_enabled": "boolean",
+    "quiet_hours": {
+      "enabled": "boolean",
+      "end": "string[time]",
+      "start": "string[time]"
+    },
+    "sms_enabled": "boolean"
+  },
+  "updated_at": "string[date-time]"
+}
+    ||
+  }
+}
+'Request From': {
+  'user.info.request': { 
+    shape: queue
+    tooltip: ||json
+Request:
+{
+  "user_id": "string[uuid]"
+}
+Reply:
+{
+  "email": "string[email]",
+  "error": {
+    "code": "string",
+    "message": "string"
+  },
+  "language": "string",
+  "name": "string",
+  "timezone": "string",
+  "user_id": "string[uuid]"
+}
+    ||
+  }
+}
+'Receive From' -> 'Notification Service'
+'Notification Service' -> 'Send To'
+'Reply To' -> 'Notification Service'
+'Notification Service' -> 'Request From'
