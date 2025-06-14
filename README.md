@@ -1,5 +1,9 @@
 # MessageFlow
 
+[![Run Tests](https://github.com/denchenko/messageflow/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/denchenko/messageflow/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/denchenko/messageflow)](https://goreportcard.com/report/github.com/denchenko/messageflow)
+[![GoDoc](https://godoc.org/github.com/denchenko/messageflow?status.svg)](https://godoc.org/github.com/denchenko/messageflow)
+
 MessageFlow is a Go library for visualizing AsyncAPI specifications. It provides tools to parse AsyncAPI documents and transform them into visual formats, making it easier to understand message flows and service interactions in asynchronous systems.
 
 Example of visualizing a Notification service using [this](source/asyncapi/testdata/notification.yaml) AsyncAPI specification. Message payloads are displayed as thumbnails when hovering over specific queues. This approach was chosen to keep the schema clean and uncluttered.
