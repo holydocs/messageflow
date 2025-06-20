@@ -2,36 +2,34 @@
 {{- $hasSendTo := false -}}
 {{- $hasReplyTo := false -}}
 {{- $hasRequestFrom := false -}}
-{{- range .Services -}}
-  {{- range .Operation }}
-    {{- if and (eq .Action "receive") (not .Reply) }}
-      {{- $hasReceiveFrom = true }}
-    {{- end }}
-    {{- if and (eq .Action "send") (not .Reply) }}
-      {{- $hasSendTo = true }}
-    {{- end }}
-    {{- if and (eq .Action "receive") .Reply }}
-      {{- $hasReplyTo = true }}
-    {{- end }}
-    {{- if and (eq .Action "send") .Reply }}
-      {{- $hasRequestFrom = true }}
-    {{- end }}
+{{- range .Operation }}
+  {{- if and (eq .Action "receive") (not .Reply) }}
+    {{- $hasReceiveFrom = true }}
+  {{- end }}
+  {{- if and (eq .Action "send") (not .Reply) }}
+    {{- $hasSendTo = true }}
+  {{- end }}
+  {{- if and (eq .Action "receive") .Reply }}
+    {{- $hasReplyTo = true }}
+  {{- end }}
+  {{- if and (eq .Action "send") .Reply }}
+    {{- $hasRequestFrom = true }}
   {{- end }}
 {{- end }}
 {{- if $hasReceiveFrom -}}
 'Receive From': {
-{{- range .Services }}
-  {{- range .Operation }}
-    {{- if and (eq .Action "receive") (not .Reply) }}
-  '{{.Channel.Name}}': { 
-    shape: queue
-    {{- if .Channel.Message }}
-    tooltip: ||json
+  grid-columns: 2
+
+{{- range .Operation }}
+  {{- if and (eq .Action "receive") (not .Reply) }}
+'{{.Channel.Name}}': { 
+  shape: queue
+  {{- if .Channel.Message }}
+  tooltip: ||json
 {{.Channel.Message}}
-    ||
-    {{- end }}
-  }
-    {{- end }}
+  ||
+  {{- end }}
+}
   {{- end }}
 {{- end }}
 }
@@ -39,7 +37,8 @@
 
 {{- if $hasSendTo }}
 'Send To': {
-{{- range .Services }}
+  grid-columns: 2
+
   {{- range .Operation }}
     {{- if and (eq .Action "send") (not .Reply) }}
   '{{.Channel.Name}}': { 
@@ -52,13 +51,13 @@
   }
     {{- end }}
   {{- end }}
-{{- end }}
 }
 {{- end }}
 
 {{- if $hasReplyTo }}
 'Reply To': {
-{{- range .Services }}
+  grid-columns: 2
+
   {{- range .Operation }}
     {{- if and (eq .Action "receive") .Reply }}
   '{{.Channel.Name}}': { 
@@ -74,13 +73,13 @@ Reply:
   }
     {{- end }}
   {{- end }}
-{{- end }}
 }
 {{- end }}
 
 {{- if $hasRequestFrom }}
 'Request From': {
-{{- range .Services }}
+  grid-columns: 2
+
   {{- range .Operation }}
     {{- if and (eq .Action "send") .Reply }}
   '{{.Channel.Name}}': { 
@@ -96,11 +95,9 @@ Reply:
   }
     {{- end }}
   {{- end }}
-{{- end }}
 }
 {{- end }}
 
-{{- range .Services -}}
 {{- if $hasReceiveFrom }}
 'Receive From' -> '{{.Name}}'
 {{- end }}
@@ -113,4 +110,3 @@ Reply:
 {{- if $hasRequestFrom }}
 '{{.Name}}' -> 'Request From'
 {{- end }}
-{{- end -}}

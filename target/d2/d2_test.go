@@ -148,7 +148,9 @@ func TestFormatSchema(t *testing.T) {
 	target, err := NewTarget()
 	require.NoError(t, err)
 
-	actual, err := target.FormatSchema(ctx, schema)
+	actual, err := target.FormatSchema(ctx, schema, messageflow.FormatOptions{
+		Mode: messageflow.FormatModeServiceChannels,
+	})
 	require.NoError(t, err)
 
 	expected := messageflow.FormattedSchema{

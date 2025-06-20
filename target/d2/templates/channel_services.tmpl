@@ -1,0 +1,90 @@
+'{{.Channel}}': {
+  shape: queue
+}
+
+{{- if .Message }}
+{{- if .ReplyMessage }}
+'request': |json
+Request:
+{{.Message}}
+| {near: top-center}
+
+'request' -- '{{.Channel}}'
+{{- else }}
+'message': |json
+Message:
+{{.Message}}
+| {near: top-center}
+
+'message' -- '{{.Channel}}'
+{{- end }}
+{{- end }}
+
+{{- if .ReplyMessage }}
+'reply': |json
+Reply:
+{{.ReplyMessage}}
+| {near: bottom-center}
+
+'reply' -- '{{.Channel}}'
+{{- end }}
+
+{{- if .Senders }}
+{{- if .ReplyMessage }}
+requesters: {
+  grid-columns: 2
+  near: center-left
+  {{- range .Senders }}
+  '{{.}}': {
+  }
+  {{- end }}
+}
+{{- else }}
+senders: {
+  grid-columns: 2
+  near: center-left
+  {{- range .Senders }}
+  '{{.}}': {
+  }
+  {{- end }}
+}
+{{- end }}
+{{- end }}
+
+{{- if .Receivers }}
+{{- if .ReplyMessage }}
+repliers: {
+  grid-columns: 2
+  near: center-right
+  {{- range .Receivers }}
+  '{{.}}': {
+  }
+  {{- end }}
+}
+{{- else }}
+receivers: {
+  grid-columns: 2
+  near: center-right
+  {{- range .Receivers }}
+  '{{.}}': {
+  }
+  {{- end }}
+}
+{{- end }}
+{{- end }}
+
+{{- if .Senders }}
+{{- if .ReplyMessage }}
+requesters -> '{{.Channel}}'
+{{- else }}
+senders -> '{{.Channel}}'
+{{- end }}
+{{- end }}
+
+{{- if .Receivers }}
+{{- if .ReplyMessage }}
+'{{.Channel}}' -> repliers
+{{- else }}
+'{{.Channel}}' -> receivers
+{{- end }}
+{{- end }}

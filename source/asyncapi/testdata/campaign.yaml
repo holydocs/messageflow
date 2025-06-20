@@ -1,0 +1,568 @@
+asyncapi: 3.0.0
+
+info:
+  title: Campaign Service
+  version: 1.0.0
+  description: |
+    A service that manages notification campaigns, user targeting, and campaign execution.
+    Handles campaign creation, user segmentation, scheduling, and personalized notification delivery.
+    Uses user data for targeting and personalization of campaign messages.
+
+channels:
+  campaign.create:
+    address: campaign.create
+    messages:
+      CampaignCreate:
+        $ref: '#/components/messages/CampaignCreate'
+
+  campaign.execute:
+    address: campaign.execute
+    messages:
+      CampaignExecute:
+        $ref: '#/components/messages/CampaignExecute'
+
+  campaign.status:
+    address: campaign.status
+    messages:
+      CampaignStatusUpdate:
+        $ref: '#/components/messages/CampaignStatusUpdate'
+
+  user.info.request:
+    address: user.info.request
+    parameters:
+      user_id:
+        description: ID of the user to request information for
+    messages:
+      UserInfoRequest:
+        $ref: '#/components/messages/UserInfoRequest'
+      UserInfoReply:
+        $ref: '#/components/messages/UserInfoReply'
+
+  notification.user.{user_id}.push:
+    address: notification.user.{user_id}.push
+    parameters:
+      user_id:
+        description: ID of the user receiving the notification
+    messages:
+      PushNotification:
+        $ref: '#/components/messages/PushNotification'
+
+  campaign.analytics:
+    address: campaign.analytics
+    messages:
+      CampaignAnalyticsEvent:
+        $ref: '#/components/messages/CampaignAnalyticsEvent'
+
+operations:
+  receiveCampaignCreate:
+    action: receive
+    channel:
+      $ref: '#/channels/campaign.create'
+    summary: Receive a request to create a new notification campaign
+    messages:
+      - $ref: '#/channels/campaign.create/messages/CampaignCreate'
+
+  receiveCampaignExecute:
+    action: receive
+    channel:
+      $ref: '#/channels/campaign.execute'
+    summary: Receive a request to execute a notification campaign
+    messages:
+      - $ref: '#/channels/campaign.execute/messages/CampaignExecute'
+
+  sendCampaignStatus:
+    action: send
+    channel:
+      $ref: '#/channels/campaign.status'
+    summary: Send campaign status updates
+    messages:
+      - $ref: '#/channels/campaign.status/messages/CampaignStatusUpdate'
+
+  requestUserInfo:
+    action: send
+    channel:
+      $ref: '#/channels/user.info.request'
+    summary: Request user information for campaign targeting and personalization
+    messages:
+      - $ref: '#/channels/user.info.request/messages/UserInfoRequest'
+    reply:
+      channel:
+        $ref: '#/channels/user.info.request'
+      messages:
+        - $ref: '#/channels/user.info.request/messages/UserInfoReply'
+
+  sendPushNotification:
+    action: send
+    channel:
+      $ref: '#/channels/notification.user.{user_id}.push'
+    summary: Send personalized push notifications for campaign execution
+    messages:
+      - $ref: '#/channels/notification.user.{user_id}.push/messages/PushNotification'
+
+  sendCampaignAnalytics:
+    action: send
+    channel:
+      $ref: '#/channels/campaign.analytics'
+    summary: Publish campaign analytics events
+    messages:
+      - $ref: '#/channels/campaign.analytics/messages/CampaignAnalyticsEvent'
+
+components:
+  messages:
+    CampaignCreate:
+      name: CampaignCreate
+      title: Campaign Create Message
+      summary: Message for creating a new notification campaign
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          campaign_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the campaign
+          name:
+            type: string
+            description: Campaign name
+          description:
+            type: string
+            description: Campaign description
+          target_audience:
+            $ref: '#/components/schemas/TargetAudience'
+          notification_template:
+            $ref: '#/components/schemas/NotificationTemplate'
+          schedule:
+            $ref: '#/components/schemas/CampaignSchedule'
+          settings:
+            $ref: '#/components/schemas/CampaignSettings'
+          created_at:
+            type: string
+            format: date-time
+            description: When the campaign was created
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - campaign_id
+          - name
+          - target_audience
+          - notification_template
+          - schedule
+
+    CampaignExecute:
+      name: CampaignExecute
+      title: Campaign Execute Message
+      summary: Message for executing a notification campaign
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          execution_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the campaign execution
+          campaign_id:
+            type: string
+            format: uuid
+            description: ID of the campaign to execute
+          execution_type:
+            type: string
+            enum: [immediate, scheduled, batch]
+            description: Type of campaign execution
+          batch_size:
+            type: integer
+            minimum: 1
+            maximum: 10000
+            description: Number of notifications to send per batch (for batch execution)
+          priority:
+            type: string
+            enum: [low, normal, high]
+            default: normal
+          created_at:
+            type: string
+            format: date-time
+            description: When the execution was created
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - execution_id
+          - campaign_id
+          - execution_type
+
+    CampaignStatusUpdate:
+      name: CampaignStatusUpdate
+      title: Campaign Status Update Message
+      summary: Message for updating campaign execution status
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          execution_id:
+            type: string
+            format: uuid
+            description: ID of the campaign execution
+          campaign_id:
+            type: string
+            format: uuid
+            description: ID of the campaign
+          status:
+            type: string
+            enum: [pending, running, completed, failed, paused, cancelled]
+            description: Current status of the campaign execution
+          progress:
+            type: object
+            properties:
+              total_targets:
+                type: integer
+                description: Total number of users targeted
+              sent:
+                type: integer
+                description: Number of notifications sent
+              failed:
+                type: integer
+                description: Number of notifications that failed
+              success_rate:
+                type: number
+                format: float
+                minimum: 0
+                maximum: 1
+                description: Success rate as a percentage
+            required:
+              - total_targets
+              - sent
+              - failed
+          error:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Error code
+              message:
+                type: string
+                description: Error message
+          updated_at:
+            type: string
+            format: date-time
+            description: When the status was updated
+        required:
+          - execution_id
+          - campaign_id
+          - status
+          - updated_at
+
+    UserInfoRequest:
+      name: UserInfoRequest
+      title: User Information Request Message
+      summary: Message for requesting user information from user service
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user to request information for
+        required:
+          - user_id
+
+    UserInfoReply:
+      name: UserInfoReply
+      title: User Information Reply Message
+      summary: Message containing requested user information
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          email:
+            type: string
+            format: email
+            description: User's email address
+          name:
+            type: string
+            description: User's full name
+          language:
+            type: string
+            pattern: '^[a-z]{2}-[A-Z]{2}$'
+            description: User's preferred language (e.g., en-US)
+          timezone:
+            type: string
+            description: User's timezone (e.g., America/New_York)
+          error:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Error code
+              message:
+                type: string
+                description: Error message
+        required:
+          - user_id
+
+    PushNotification:
+      name: PushNotification
+      title: Push Notification Message
+      summary: Message for sending push notifications to users
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          notification_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the notification
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user receiving the notification
+          title:
+            type: string
+            description: Notification title
+          body:
+            type: string
+            description: Notification body
+          priority:
+            type: string
+            enum: [low, normal, high]
+            default: normal
+          data:
+            type: object
+            description: Additional notification data
+          created_at:
+            type: string
+            format: date-time
+            description: When the notification was created
+        required:
+          - notification_id
+          - user_id
+          - title
+          - body
+
+    CampaignAnalyticsEvent:
+      name: CampaignAnalyticsEvent
+      title: Campaign Analytics Event Message
+      summary: Message for tracking campaign-related analytics
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          event_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the event
+          event_type:
+            type: string
+            enum: [campaign_created, campaign_executed, notification_sent, notification_opened, notification_clicked, campaign_completed, campaign_failed]
+            description: Type of the campaign analytics event
+          campaign_id:
+            type: string
+            format: uuid
+            description: ID of the campaign
+          execution_id:
+            type: string
+            format: uuid
+            description: ID of the campaign execution
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user (for user-specific events)
+          notification_id:
+            type: string
+            format: uuid
+            description: ID of the notification (for notification-specific events)
+          timestamp:
+            type: string
+            format: date-time
+            description: When the event occurred
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - event_id
+          - event_type
+          - campaign_id
+          - timestamp
+
+  schemas:
+    TargetAudience:
+      type: object
+      properties:
+        user_segments:
+          type: array
+          items:
+            type: string
+            enum: [all_users, new_users, active_users, inactive_users, premium_users, free_users]
+          description: User segments to target
+        user_filters:
+          type: object
+          properties:
+            language:
+              type: array
+              items:
+                type: string
+                pattern: '^[a-z]{2}-[A-Z]{2}$'
+              description: Target users with specific languages
+            timezone:
+              type: array
+              items:
+                type: string
+              description: Target users in specific timezones
+            registration_date:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date
+                to:
+                  type: string
+                  format: date
+              description: Target users registered within date range
+            last_activity:
+              type: object
+              properties:
+                from:
+                  type: string
+                  format: date-time
+                to:
+                  type: string
+                  format: date-time
+              description: Target users active within time range
+        estimated_reach:
+          type: integer
+          description: Estimated number of users that match the targeting criteria
+      required:
+        - user_segments
+
+    NotificationTemplate:
+      type: object
+      properties:
+        title_template:
+          type: string
+          description: Template for notification title (supports user data interpolation)
+        body_template:
+          type: string
+          description: Template for notification body (supports user data interpolation)
+        priority:
+          type: string
+          enum: [low, normal, high]
+          default: normal
+        data:
+          type: object
+          description: Additional notification data
+        localization:
+          type: object
+          additionalProperties:
+            type: object
+            properties:
+              title:
+                type: string
+              body:
+                type: string
+          description: Localized versions of title and body templates
+      required:
+        - title_template
+        - body_template
+
+    CampaignSchedule:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [immediate, scheduled, recurring]
+          description: Type of campaign scheduling
+        scheduled_at:
+          type: string
+          format: date-time
+          description: When to execute the campaign (for scheduled campaigns)
+        recurring:
+          type: object
+          properties:
+            frequency:
+              type: string
+              enum: [daily, weekly, monthly]
+            interval:
+              type: integer
+              minimum: 1
+              description: Interval between executions
+            start_date:
+              type: string
+              format: date
+            end_date:
+              type: string
+              format: date
+          description: Recurring schedule configuration
+        timezone:
+          type: string
+          description: Timezone for scheduling (defaults to UTC)
+      required:
+        - type
+
+    CampaignSettings:
+      type: object
+      properties:
+        max_retries:
+          type: integer
+          minimum: 0
+          maximum: 10
+          default: 3
+          description: Maximum number of retry attempts for failed notifications
+        batch_size:
+          type: integer
+          minimum: 1
+          maximum: 10000
+          default: 1000
+          description: Number of notifications to send per batch
+        rate_limit:
+          type: integer
+          minimum: 1
+          description: Maximum notifications per second
+        respect_quiet_hours:
+          type: boolean
+          default: true
+          description: Whether to respect user quiet hours
+        a_b_testing:
+          type: object
+          properties:
+            enabled:
+              type: boolean
+              default: false
+            variants:
+              type: array
+              items:
+                $ref: '#/components/schemas/NotificationTemplate'
+              minItems: 2
+              maxItems: 5
+            traffic_split:
+              type: array
+              items:
+                type: number
+                minimum: 0
+                maximum: 1
+              description: Percentage split for each variant
+          description: A/B testing configuration
+      required:
+        - max_retries
+        - batch_size
+
+    Metadata:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [mobile, web, api]
+          default: api
+        platform:
+          type: string
+          enum: [ios, android, web]
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        environment:
+          type: string
+          enum: [development, staging, production]
+          default: production
+      required:
+        - source
+        - environment 

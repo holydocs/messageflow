@@ -22,8 +22,13 @@ import (
 // targetType defines the schema format type for D2 diagrams
 const targetType = messageflow.TargetType("d2")
 
-//go:embed schema.tmpl
-var templateFS embed.FS
+var (
+	//go:embed templates/service_channels.tmpl
+	serviceChannelsTemplateFS embed.FS
+
+	//go:embed templates/channel_services.tmpl
+	channelServicesTemplateFS embed.FS
+)
 
 // Ensure Target implements messageflow interfaces.
 var (
@@ -32,9 +37,10 @@ var (
 
 // Target handles the generation and rendering of D2 diagrams from message flow schemas.
 type Target struct {
-	template    *template.Template
-	renderOpts  *d2svg.RenderOpts
-	compileOpts *d2lib.CompileOptions
+	serviceChannelsTemplate *template.Template
+	channelServicesTemplate *template.Template
+	renderOpts              *d2svg.RenderOpts
+	compileOpts             *d2lib.CompileOptions
 }
 
 // TargetOpt is a function type that allows customization of a Target instance.
@@ -61,7 +67,12 @@ func WithCompileOpts(compileOpts *d2lib.CompileOptions) TargetOpt {
 // rendering and compilation options. The formatter uses the ELK layout engine for
 // diagram arrangement.
 func NewTarget() (*Target, error) {
-	tmpl, err := template.ParseFS(templateFS, "schema.tmpl")
+	serviceChannelsTemplate, err := template.ParseFS(serviceChannelsTemplateFS, "templates/service_channels.tmpl")
+	if err != nil {
+		return nil, fmt.Errorf("parsing template: %w", err)
+	}
+
+	channelServicesTemplate, err := template.ParseFS(channelServicesTemplateFS, "templates/channel_services.tmpl")
 	if err != nil {
 		return nil, fmt.Errorf("parsing template: %w", err)
 	}
@@ -76,7 +87,8 @@ func NewTarget() (*Target, error) {
 	}
 
 	return &Target{
-		template: tmpl,
+		serviceChannelsTemplate: serviceChannelsTemplate,
+		channelServicesTemplate: channelServicesTemplate,
 		renderOpts: &d2svg.RenderOpts{
 			Pad:     go2.Pointer(int64(5)),
 			ThemeID: &d2themescatalog.Terminal.ID,
@@ -96,16 +108,45 @@ func (t *Target) Capabilities() messageflow.TargetCapabilities {
 	}
 }
 
-func (t *Target) FormatSchema(_ context.Context, s messageflow.Schema) (messageflow.FormattedSchema, error) {
+type channelServicesPayload struct {
+	Channel      string
+	Message      string
+	ReplyMessage *string
+	Senders      []string
+	Receivers    []string
+}
+
+func (t *Target) FormatSchema(
+	_ context.Context,
+	s messageflow.Schema,
+	opts messageflow.FormatOptions,
+) (messageflow.FormattedSchema, error) {
 	fs := messageflow.FormattedSchema{
 		Type: targetType,
 	}
 
 	var buf bytes.Buffer
 
-	err := t.template.Execute(&buf, s)
-	if err != nil {
-		return messageflow.FormattedSchema{}, fmt.Errorf("executing template: %w", err)
+	switch opts.Mode {
+	case messageflow.FormatModeServiceChannels:
+		payload := prepareServiceChannelsPayload(s, opts.Service)
+
+		err := t.serviceChannelsTemplate.Execute(&buf, payload)
+		if err != nil {
+			return messageflow.FormattedSchema{}, fmt.Errorf("executing service channels template: %w", err)
+		}
+	case messageflow.FormatModeChannelServices:
+		payload := prepareChannelServicesPayload(s, opts.Channel)
+
+		err := t.channelServicesTemplate.Execute(&buf, payload)
+		if err != nil {
+			return messageflow.FormattedSchema{}, fmt.Errorf("executing channel services template: %w", err)
+		}
+	default:
+		return messageflow.FormattedSchema{}, messageflow.NewUnsupportedFormatModeError(opts.Mode, []messageflow.FormatMode{
+			messageflow.FormatModeServiceChannels,
+			messageflow.FormatModeChannelServices,
+		})
 	}
 
 	fs.Data = buf.Bytes()
@@ -132,4 +173,48 @@ func (t *Target) RenderSchema(ctx context.Context, s messageflow.FormattedSchema
 	}
 
 	return out, nil
+}
+
+func prepareServiceChannelsPayload(s messageflow.Schema, serviceName string) messageflow.Service {
+	if serviceName == "" && len(s.Services) == 1 {
+		return s.Services[0]
+	}
+
+	for _, service := range s.Services {
+		if service.Name == serviceName {
+			return service
+		}
+	}
+
+	return messageflow.Service{}
+}
+
+func prepareChannelServicesPayload(s messageflow.Schema, channel string) channelServicesPayload {
+	payload := channelServicesPayload{
+		Channel: channel,
+	}
+
+	for _, service := range s.Services {
+		for _, op := range service.Operation {
+			if op.Channel.Name == channel {
+				switch op.Action {
+				case messageflow.ActionSend:
+					payload.Senders = append(payload.Senders, service.Name)
+				case messageflow.ActionReceive:
+					payload.Receivers = append(payload.Receivers, service.Name)
+				}
+
+				if len(payload.Message) < len(op.Channel.Message) {
+					payload.Message = op.Channel.Message
+				}
+
+				if op.Reply != nil && (payload.ReplyMessage == nil ||
+					(len(*payload.ReplyMessage) < len(op.Reply.Message))) {
+					payload.ReplyMessage = &op.Reply.Message
+				}
+			}
+		}
+	}
+
+	return payload
 }

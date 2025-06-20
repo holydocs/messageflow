@@ -11,6 +11,20 @@ import (
 // TargetType represents the type of target format for schema conversion.
 type TargetType string
 
+// FormatMode represents the mode of format for schema.
+type FormatMode string
+
+const (
+	FormatModeServiceChannels = FormatMode("service_channels")
+	FormatModeChannelServices = FormatMode("channel_services")
+)
+
+type FormatOptions struct {
+	Mode    FormatMode
+	Service string
+	Channel string
+}
+
 // Schema defines the structure of a message flow schema containing services and their operations.
 type Schema struct {
 	Services []Service `json:"services"`
@@ -74,7 +88,7 @@ type SchemaExtractor interface {
 
 // SchemaFormatter interface defines the contract for formatting schemas.
 type SchemaFormatter interface {
-	FormatSchema(ctx context.Context, s Schema) (FormattedSchema, error)
+	FormatSchema(ctx context.Context, s Schema, opts FormatOptions) (FormattedSchema, error)
 }
 
 // SchemaRenderer interface defines the contract for rendering formatted schemas.
@@ -82,21 +96,46 @@ type SchemaRenderer interface {
 	RenderSchema(ctx context.Context, fs FormattedSchema) ([]byte, error)
 }
 
-// UnsupportedFormatError represents an error when an unsupported format is provided.
-type UnsupportedFormatError struct {
-	given    TargetType
-	expected TargetType
-}
-
-// NewUnsupportedFormatError creates a new UnsupportedFormatError.
-func NewUnsupportedFormatError(given, expected TargetType) error {
-	return &UnsupportedFormatError{
-		given:    given,
-		expected: expected,
+// MergeSchemas combines multiple Schema objects into a single Schema.
+func MergeSchemas(schemas ...Schema) Schema {
+	if len(schemas) == 0 {
+		return Schema{Services: []Service{}}
 	}
-}
 
-// Error implements the error interface for UnsupportedFormatError.
-func (err *UnsupportedFormatError) Error() string {
-	return fmt.Sprintf("%s format is not supported, %s expected", err.given, err.expected)
+	serviceMap := make(map[string]Service)
+
+	for _, schema := range schemas {
+		for _, service := range schema.Services {
+			if existingService, exists := serviceMap[service.Name]; exists {
+				opMap := make(map[string]Operation)
+
+				for _, op := range existingService.Operation {
+					key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message)
+					opMap[key] = op
+				}
+
+				for _, op := range service.Operation {
+					key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message)
+					opMap[key] = op
+				}
+
+				mergedOps := make([]Operation, 0, len(opMap))
+				for _, op := range opMap {
+					mergedOps = append(mergedOps, op)
+				}
+
+				existingService.Operation = mergedOps
+				serviceMap[service.Name] = existingService
+			} else {
+				serviceMap[service.Name] = service
+			}
+		}
+	}
+
+	mergedServices := make([]Service, 0, len(serviceMap))
+	for _, service := range serviceMap {
+		mergedServices = append(mergedServices, service)
+	}
+
+	return Schema{Services: mergedServices}
 }

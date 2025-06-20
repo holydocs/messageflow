@@ -1,7 +1,8 @@
 'Receive From': {
-  'notification.preferences.update': { 
-    shape: queue
-    tooltip: ||json
+  grid-columns: 2
+'notification.preferences.update': { 
+  shape: queue
+  tooltip: ||json
 {
   "preferences": {
     "categories": {
@@ -21,11 +22,11 @@
   "updated_at": "string[date-time]",
   "user_id": "string[uuid]"
 }
-    ||
-  }
-  'notification.user.{user_id}.push': { 
-    shape: queue
-    tooltip: ||json
+  ||
+}
+'notification.user.{user_id}.push': { 
+  shape: queue
+  tooltip: ||json
 {
   "body": "string",
   "created_at": "string[date-time]",
@@ -35,10 +36,11 @@
   "title": "string",
   "user_id": "string[uuid]"
 }
-    ||
-  }
+  ||
+}
 }
 'Send To': {
+  grid-columns: 2
   'notification.analytics': { 
     shape: queue
     tooltip: ||json
@@ -59,6 +61,7 @@
   }
 }
 'Reply To': {
+  grid-columns: 2
   'notification.preferences.get': { 
     shape: queue
     tooltip: ||json
@@ -89,6 +92,7 @@ Reply:
   }
 }
 'Request From': {
+  grid-columns: 2
   'user.info.request': { 
     shape: queue
     tooltip: ||json

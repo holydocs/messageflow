@@ -1,0 +1,564 @@
+asyncapi: 3.0.0
+
+info:
+  title: Analytics Service
+  version: 1.0.0
+  description: |
+    A centralized analytics service that receives and processes analytics events from all other services.
+    Provides insights, reporting, and analytics data aggregation for user behavior, notification performance,
+    campaign effectiveness, and system-wide metrics.
+
+channels:
+  user.analytics:
+    address: user.analytics
+    messages:
+      UserAnalyticsEvent:
+        $ref: '#/components/messages/UserAnalyticsEvent'
+
+  notification.analytics:
+    address: notification.analytics
+    messages:
+      NotificationAnalyticsEvent:
+        $ref: '#/components/messages/NotificationAnalyticsEvent'
+
+  campaign.analytics:
+    address: campaign.analytics
+    messages:
+      CampaignAnalyticsEvent:
+        $ref: '#/components/messages/CampaignAnalyticsEvent'
+
+  analytics.report.request:
+    address: analytics.report.request
+    messages:
+      AnalyticsReportRequest:
+        $ref: '#/components/messages/AnalyticsReportRequest'
+      AnalyticsReportReply:
+        $ref: '#/components/messages/AnalyticsReportReply'
+
+  analytics.insights:
+    address: analytics.insights
+    messages:
+      AnalyticsInsight:
+        $ref: '#/components/messages/AnalyticsInsight'
+
+  analytics.alert:
+    address: analytics.alert
+    messages:
+      AnalyticsAlert:
+        $ref: '#/components/messages/AnalyticsAlert'
+
+operations:
+  receiveUserAnalytics:
+    action: receive
+    channel:
+      $ref: '#/channels/user.analytics'
+    summary: Receive user analytics events from user service
+    messages:
+      - $ref: '#/channels/user.analytics/messages/UserAnalyticsEvent'
+
+  receiveNotificationAnalytics:
+    action: receive
+    channel:
+      $ref: '#/channels/notification.analytics'
+    summary: Receive notification analytics events from notification service
+    messages:
+      - $ref: '#/channels/notification.analytics/messages/NotificationAnalyticsEvent'
+
+  receiveCampaignAnalytics:
+    action: receive
+    channel:
+      $ref: '#/channels/campaign.analytics'
+    summary: Receive campaign analytics events from campaign service
+    messages:
+      - $ref: '#/channels/campaign.analytics/messages/CampaignAnalyticsEvent'
+
+  replyAnalyticsReport:
+    action: receive
+    channel:
+      $ref: '#/channels/analytics.report.request'
+    summary: Receive analytics report requests and reply with report data
+    messages:
+      - $ref: '#/channels/analytics.report.request/messages/AnalyticsReportRequest'
+    reply:
+      channel:
+        $ref: '#/channels/analytics.report.request'
+      messages:
+        - $ref: '#/channels/analytics.report.request/messages/AnalyticsReportReply'
+
+  sendAnalyticsInsights:
+    action: send
+    channel:
+      $ref: '#/channels/analytics.insights'
+    summary: Send automated analytics insights and recommendations
+    messages:
+      - $ref: '#/channels/analytics.insights/messages/AnalyticsInsight'
+
+  sendAnalyticsAlert:
+    action: send
+    channel:
+      $ref: '#/channels/analytics.alert'
+    summary: Send analytics alerts for anomalies or important events
+    messages:
+      - $ref: '#/channels/analytics.alert/messages/AnalyticsAlert'
+
+components:
+  messages:
+    UserAnalyticsEvent:
+      name: UserAnalyticsEvent
+      title: User Analytics Event Message
+      summary: Message for tracking user-related analytics
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          event_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the event
+          event_type:
+            type: string
+            enum: [user_registered, user_logged_in, profile_updated, preferences_changed, account_deleted]
+            description: Type of the analytics event
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          timestamp:
+            type: string
+            format: date-time
+            description: When the event occurred
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - event_id
+          - event_type
+          - user_id
+          - timestamp
+
+    NotificationAnalyticsEvent:
+      name: NotificationAnalyticsEvent
+      title: Notification Analytics Event Message
+      summary: Message for tracking notification-related analytics
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          event_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the event
+          event_type:
+            type: string
+            enum: [notification_sent, notification_opened, notification_clicked]
+            description: Type of the analytics event
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          notification_id:
+            type: string
+            format: uuid
+            description: ID of the related notification
+          timestamp:
+            type: string
+            format: date-time
+            description: When the event occurred
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - event_id
+          - event_type
+          - user_id
+          - timestamp
+
+    CampaignAnalyticsEvent:
+      name: CampaignAnalyticsEvent
+      title: Campaign Analytics Event Message
+      summary: Message for tracking campaign-related analytics
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          event_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the event
+          event_type:
+            type: string
+            enum: [campaign_created, campaign_executed, notification_sent, notification_opened, notification_clicked, campaign_completed, campaign_failed]
+            description: Type of the campaign analytics event
+          campaign_id:
+            type: string
+            format: uuid
+            description: ID of the campaign
+          execution_id:
+            type: string
+            format: uuid
+            description: ID of the campaign execution
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user (for user-specific events)
+          notification_id:
+            type: string
+            format: uuid
+            description: ID of the notification (for notification-specific events)
+          timestamp:
+            type: string
+            format: date-time
+            description: When the event occurred
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - event_id
+          - event_type
+          - campaign_id
+          - timestamp
+
+    AnalyticsReportRequest:
+      name: AnalyticsReportRequest
+      title: Analytics Report Request Message
+      summary: Message for requesting analytics reports and insights
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          report_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the report request
+          report_type:
+            type: string
+            enum: [user_activity, notification_performance, campaign_effectiveness, system_health, custom]
+            description: Type of report requested
+          time_range:
+            $ref: '#/components/schemas/TimeRange'
+          filters:
+            type: object
+            properties:
+              user_segments:
+                type: array
+                items:
+                  type: string
+                  enum: [all_users, new_users, active_users, inactive_users, premium_users, free_users]
+              event_types:
+                type: array
+                items:
+                  type: string
+              campaign_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+              user_ids:
+                type: array
+                items:
+                  type: string
+                  format: uuid
+            description: Filters to apply to the report
+          metrics:
+            type: array
+            items:
+              type: string
+              enum: [event_count, user_count, conversion_rate, engagement_rate, response_time, error_rate]
+            description: Specific metrics to include in the report
+          format:
+            type: string
+            enum: [json, csv, pdf]
+            default: json
+            description: Output format for the report
+          created_at:
+            type: string
+            format: date-time
+            description: When the report request was created
+        required:
+          - report_id
+          - report_type
+          - time_range
+
+    AnalyticsReportReply:
+      name: AnalyticsReportReply
+      title: Analytics Report Reply Message
+      summary: Message containing requested analytics report data
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          report_id:
+            type: string
+            format: uuid
+            description: ID of the report request
+          report_type:
+            type: string
+            enum: [user_activity, notification_performance, campaign_effectiveness, system_health, custom]
+            description: Type of report
+          time_range:
+            $ref: '#/components/schemas/TimeRange'
+          summary:
+            $ref: '#/components/schemas/ReportSummary'
+          data:
+            type: object
+            description: Detailed report data (structure varies by report type)
+          insights:
+            type: array
+            items:
+              $ref: '#/components/schemas/Insight'
+            description: Automated insights generated from the data
+          generated_at:
+            type: string
+            format: date-time
+            description: When the report was generated
+          error:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Error code
+              message:
+                type: string
+                description: Error message
+        required:
+          - report_id
+          - report_type
+          - time_range
+          - summary
+          - generated_at
+
+    AnalyticsInsight:
+      name: AnalyticsInsight
+      title: Analytics Insight Message
+      summary: Message containing automated analytics insights and recommendations
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          insight_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the insight
+          insight_type:
+            type: string
+            enum: [trend, anomaly, recommendation, alert]
+            description: Type of insight
+          category:
+            type: string
+            enum: [user_behavior, notification_performance, campaign_effectiveness, system_health]
+            description: Category of the insight
+          title:
+            type: string
+            description: Insight title
+          description:
+            type: string
+            description: Detailed description of the insight
+          severity:
+            type: string
+            enum: [low, medium, high, critical]
+            description: Severity level of the insight
+          confidence:
+            type: number
+            format: float
+            minimum: 0
+            maximum: 1
+            description: Confidence level of the insight (0-1)
+          data_points:
+            type: array
+            items:
+              type: object
+            description: Supporting data points for the insight
+          recommendations:
+            type: array
+            items:
+              type: string
+            description: Recommended actions based on the insight
+          created_at:
+            type: string
+            format: date-time
+            description: When the insight was created
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - insight_id
+          - insight_type
+          - category
+          - title
+          - description
+          - severity
+          - created_at
+
+    AnalyticsAlert:
+      name: AnalyticsAlert
+      title: Analytics Alert Message
+      summary: Message for analytics alerts and notifications
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          alert_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the alert
+          alert_type:
+            type: string
+            enum: [anomaly_detected, threshold_exceeded, trend_change, system_issue]
+            description: Type of alert
+          severity:
+            type: string
+            enum: [low, medium, high, critical]
+            description: Severity level of the alert
+          title:
+            type: string
+            description: Alert title
+          description:
+            type: string
+            description: Detailed description of the alert
+          metric:
+            type: string
+            description: Metric that triggered the alert
+          threshold:
+            type: number
+            description: Threshold value that was exceeded
+          current_value:
+            type: number
+            description: Current value of the metric
+          time_window:
+            type: string
+            description: Time window for the alert
+          affected_services:
+            type: array
+            items:
+              type: string
+              enum: [user_service, notification_service, campaign_service]
+            description: Services affected by the alert
+          actions:
+            type: array
+            items:
+              type: string
+            description: Recommended actions to address the alert
+          created_at:
+            type: string
+            format: date-time
+            description: When the alert was created
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - alert_id
+          - alert_type
+          - severity
+          - title
+          - description
+          - created_at
+
+  schemas:
+    TimeRange:
+      type: object
+      properties:
+        start:
+          type: string
+          format: date-time
+          description: Start time for the report period
+        end:
+          type: string
+          format: date-time
+          description: End time for the report period
+        granularity:
+          type: string
+          enum: [minute, hour, day, week, month]
+          default: day
+          description: Time granularity for the report
+      required:
+        - start
+        - end
+
+    ReportSummary:
+      type: object
+      properties:
+        total_events:
+          type: integer
+          description: Total number of events in the report period
+        unique_users:
+          type: integer
+          description: Number of unique users in the report period
+        event_types:
+          type: object
+          additionalProperties:
+            type: integer
+          description: Count of events by type
+        top_metrics:
+          type: object
+          properties:
+            conversion_rate:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+            engagement_rate:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+            response_time_avg:
+              type: number
+              format: float
+            error_rate:
+              type: number
+              format: float
+              minimum: 0
+              maximum: 1
+          description: Key performance metrics
+      required:
+        - total_events
+        - unique_users
+
+    Insight:
+      type: object
+      properties:
+        type:
+          type: string
+          enum: [trend, anomaly, correlation, recommendation]
+          description: Type of insight
+        title:
+          type: string
+          description: Insight title
+        description:
+          type: string
+          description: Insight description
+        confidence:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: Confidence level of the insight
+        impact:
+          type: string
+          enum: [low, medium, high]
+          description: Impact level of the insight
+        data_points:
+          type: array
+          items:
+            type: object
+          description: Supporting data for the insight
+      required:
+        - type
+        - title
+        - description
+
+    Metadata:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [mobile, web, api]
+          default: api
+        platform:
+          type: string
+          enum: [ios, android, web]
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        environment:
+          type: string
+          enum: [development, staging, production]
+          default: production
+      required:
+        - source
+        - environment 

@@ -1,0 +1,198 @@
+asyncapi: 3.0.0
+
+info:
+  title: User Service
+  version: 1.0.0
+  description: |
+    A service that manages user information, profiles, and authentication.
+    Handles user data requests, profile updates, and user lifecycle events.
+
+channels:
+  user.info.request:
+    address: user.info.request
+    parameters:
+      user_id:
+        description: ID of the user to request information for
+    messages:
+      UserInfoRequest:
+        $ref: '#/components/messages/UserInfoRequest'
+      UserInfoReply:
+        $ref: '#/components/messages/UserInfoReply'
+
+  user.info.update:
+    address: user.info.update
+    messages:
+      UserInfoUpdate:
+        $ref: '#/components/messages/UserInfoUpdate'
+
+  user.analytics:
+    address: user.analytics
+    messages:
+      UserAnalyticsEvent:
+        $ref: '#/components/messages/UserAnalyticsEvent'
+
+operations:
+  replyUserInfo:
+    action: receive
+    channel:
+      $ref: '#/channels/user.info.request'
+    summary: Receive user information request and reply with user data
+    messages:
+      - $ref: '#/channels/user.info.request/messages/UserInfoRequest'
+    reply:
+      channel:
+        $ref: '#/channels/user.info.request'
+      messages:
+        - $ref: '#/channels/user.info.request/messages/UserInfoReply'
+
+  sendUserInfoUpdate:
+    action: send
+    channel:
+      $ref: '#/channels/user.info.update'
+    summary: Publish user information updates
+    messages:
+      - $ref: '#/channels/user.info.update/messages/UserInfoUpdate'
+
+  sendUserAnalytics:
+    action: send
+    channel:
+      $ref: '#/channels/user.analytics'
+    summary: Publish user analytics events
+    messages:
+      - $ref: '#/channels/user.analytics/messages/UserAnalyticsEvent'
+
+components:
+  messages:
+    UserInfoRequest:
+      name: UserInfoRequest
+      title: User Information Request Message
+      summary: Message for requesting user information
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user to request information for
+        required:
+          - user_id
+
+    UserInfoReply:
+      name: UserInfoReply
+      title: User Information Reply Message
+      summary: Message containing requested user information
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          email:
+            type: string
+            format: email
+            description: User's email address
+          name:
+            type: string
+            description: User's full name
+          language:
+            type: string
+            pattern: '^[a-z]{2}-[A-Z]{2}$'
+            description: User's preferred language (e.g., en-US)
+          timezone:
+            type: string
+            description: User's timezone (e.g., America/New_York)
+          error:
+            type: object
+            properties:
+              code:
+                type: string
+                description: Error code
+              message:
+                type: string
+                description: Error message
+        required:
+          - user_id
+
+
+    UserInfoUpdate:
+      name: UserInfoUpdate
+      title: User Information Update Message
+      summary: Message for publishing user information updates
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          changes:
+            type: object
+            description: Object containing the changed fields and their new values
+          updated_at:
+            type: string
+            format: date-time
+            description: When the update occurred
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - user_id
+          - update_type
+          - updated_at
+
+    UserAnalyticsEvent:
+      name: UserAnalyticsEvent
+      title: User Analytics Event Message
+      summary: Message for tracking user-related analytics
+      contentType: application/json
+      payload:
+        type: object
+        properties:
+          event_id:
+            type: string
+            format: uuid
+            description: Unique identifier for the event
+          event_type:
+            type: string
+            enum: [user_registered, user_logged_in, profile_updated, preferences_changed, account_deleted]
+            description: Type of the analytics event
+          user_id:
+            type: string
+            format: uuid
+            description: ID of the user
+          timestamp:
+            type: string
+            format: date-time
+            description: When the event occurred
+          metadata:
+            $ref: '#/components/schemas/Metadata'
+        required:
+          - event_id
+          - event_type
+          - user_id
+          - timestamp
+
+  schemas:
+    Metadata:
+      type: object
+      properties:
+        source:
+          type: string
+          enum: [mobile, web, api]
+          default: api
+        platform:
+          type: string
+          enum: [ios, android, web]
+        version:
+          type: string
+          pattern: '^\d+\.\d+\.\d+$'
+        environment:
+          type: string
+          enum: [development, staging, production]
+          default: production
+      required:
+        - source
+        - environment 
