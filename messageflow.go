@@ -15,6 +15,7 @@ type TargetType string
 type FormatMode string
 
 const (
+	FormatModeContextServices = FormatMode("context_services")
 	FormatModeServiceChannels = FormatMode("service_channels")
 	FormatModeChannelServices = FormatMode("channel_services")
 )

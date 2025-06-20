@@ -1,0 +1,17 @@
+{{- range .Services }}
+'{{.Name}}': {
+  shape: rectangle
+}
+{{- end }}
+
+{{- range .Connections }}
+{{- if .Bidirectional }}
+'{{.From}}' <-> '{{.To}}': {
+  label: "{{.Label}}"
+}
+{{- else }}
+'{{.From}}' -> '{{.To}}': {
+  label: "{{.Label}}"
+}
+{{- end }}
+{{- end }} 
