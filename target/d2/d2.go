@@ -120,11 +120,13 @@ func (t *Target) Capabilities() messageflow.TargetCapabilities {
 }
 
 type channelServicesPayload struct {
-	Channel      string
-	Message      string
-	ReplyMessage *string
-	Senders      []string
-	Receivers    []string
+	Channel          string
+	Message          string
+	MessageName      string
+	ReplyMessage     *string
+	ReplyMessageName *string
+	Senders          []string
+	Receivers        []string
 }
 
 type contextServicesPayload struct {
@@ -235,13 +237,15 @@ func prepareChannelServicesPayload(s messageflow.Schema, channel string) channel
 					payload.Receivers = append(payload.Receivers, service.Name)
 				}
 
-				if len(payload.Message) < len(op.Channel.Message) {
-					payload.Message = op.Channel.Message
+				if len(payload.Message) < len(op.Channel.Message.Payload) {
+					payload.Message = op.Channel.Message.Payload
+					payload.MessageName = op.Channel.Message.Name
 				}
 
 				if op.Reply != nil && (payload.ReplyMessage == nil ||
-					(len(*payload.ReplyMessage) < len(op.Reply.Message))) {
-					payload.ReplyMessage = &op.Reply.Message
+					(len(*payload.ReplyMessage) < len(op.Reply.Message.Payload))) {
+					payload.ReplyMessage = &op.Reply.Message.Payload
+					payload.ReplyMessageName = &op.Reply.Message.Name
 				}
 			}
 		}

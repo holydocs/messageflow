@@ -3,6 +3,7 @@
 'notification.preferences.update': { 
   shape: queue
   tooltip: ||json
+Message(PreferencesUpdate):
 {
   "preferences": {
     "categories": {
@@ -27,6 +28,7 @@
 'notification.user.{user_id}.push': { 
   shape: queue
   tooltip: ||json
+Message(PushNotification):
 {
   "body": "string",
   "created_at": "string[date-time]",
@@ -44,6 +46,7 @@
   'notification.analytics': { 
     shape: queue
     tooltip: ||json
+Message(AnalyticsEvent):
 {
   "event_id": "string[uuid]",
   "event_type": "string[enum:notification_sent,notification_opened,notification_clicked]",
@@ -65,11 +68,11 @@
   'notification.preferences.get': { 
     shape: queue
     tooltip: ||json
-Request:
+Request(PreferencesRequest):
 {
   "user_id": "string[uuid]"
 }
-Reply:
+Reply(PreferencesReply):
 {
   "preferences": {
     "categories": {
@@ -96,11 +99,11 @@ Reply:
   'user.info.request': { 
     shape: queue
     tooltip: ||json
-Request:
+Request(UserInfoRequest):
 {
   "user_id": "string[uuid]"
 }
-Reply:
+Reply(UserInfoReply):
 {
   "email": "string[email]",
   "error": {

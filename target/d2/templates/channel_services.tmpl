@@ -5,14 +5,14 @@
 {{- if .Message }}
 {{- if .ReplyMessage }}
 'request': |json
-Request:
+Request({{.MessageName}}):
 {{.Message}}
 | {near: top-center}
 
 'request' -- '{{.Channel}}'
 {{- else }}
 'message': |json
-Message:
+Message({{.MessageName}}):
 {{.Message}}
 | {near: top-center}
 
@@ -22,7 +22,7 @@ Message:
 
 {{- if .ReplyMessage }}
 'reply': |json
-Reply:
+Reply({{.ReplyMessageName}}):
 {{.ReplyMessage}}
 | {near: bottom-center}
 

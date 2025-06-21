@@ -3,6 +3,7 @@ package d2
 import (
 	"context"
 	_ "embed"
+	"os"
 	"testing"
 
 	"github.com/denchenko/messageflow"
@@ -30,13 +31,18 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.preferences.get",
-							Message: `{
+							Message: messageflow.Message{
+								Name: "PreferencesRequest",
+								Payload: `{
   "user_id": "string[uuid]"
 }`,
+							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "notification.preferences.get",
-							Message: `{
+							Message: messageflow.Message{
+								Name: "PreferencesReply",
+								Payload: `{
   "preferences": {
     "categories": {
       "marketing": "boolean",
@@ -54,13 +60,16 @@ func TestFormatSchema(t *testing.T) {
   },
   "updated_at": "string[date-time]"
 }`,
+							},
 						},
 					},
 					{
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.preferences.update",
-							Message: `{
+							Message: messageflow.Message{
+								Name: "PreferencesUpdate",
+								Payload: `{
   "preferences": {
     "categories": {
       "marketing": "boolean",
@@ -79,13 +88,16 @@ func TestFormatSchema(t *testing.T) {
   "updated_at": "string[date-time]",
   "user_id": "string[uuid]"
 }`,
+							},
 						},
 					},
 					{
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.user.{user_id}.push",
-							Message: `{
+							Message: messageflow.Message{
+								Name: "PushNotification",
+								Payload: `{
   "body": "string",
   "created_at": "string[date-time]",
   "data": "object",
@@ -94,19 +106,25 @@ func TestFormatSchema(t *testing.T) {
   "title": "string",
   "user_id": "string[uuid]"
 }`,
+							},
 						},
 					},
 					{
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "user.info.request",
-							Message: `{
+							Message: messageflow.Message{
+								Name: "UserInfoRequest",
+								Payload: `{
   "user_id": "string[uuid]"
 }`,
+							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "user.info.request",
-							Message: `{
+							Message: messageflow.Message{
+								Name: "UserInfoReply",
+								Payload: `{
   "email": "string[email]",
   "error": {
     "code": "string",
@@ -117,13 +135,16 @@ func TestFormatSchema(t *testing.T) {
   "timezone": "string",
   "user_id": "string[uuid]"
 }`,
+							},
 						},
 					},
 					{
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "notification.analytics",
-							Message: `{
+							Message: messageflow.Message{
+								Name: "AnalyticsEvent",
+								Payload: `{
   "event_id": "string[uuid]",
   "event_type": "string[enum:notification_sent,notification_opened,notification_clicked]",
   "metadata": {
@@ -136,6 +157,7 @@ func TestFormatSchema(t *testing.T) {
   "timestamp": "string[date-time]",
   "user_id": "string[uuid]"
 }`,
+							},
 						},
 					},
 				},
@@ -152,6 +174,13 @@ func TestFormatSchema(t *testing.T) {
 		Mode: messageflow.FormatModeServiceChannels,
 	})
 	require.NoError(t, err)
+
+	if os.Getenv("REWRITE_TESTDATA") == "true" {
+		err = os.WriteFile("testdata/schema.d2", actual.Data, 0644)
+		require.NoError(t, err)
+
+		return
+	}
 
 	expected := messageflow.FormattedSchema{
 		Type: "d2",
@@ -173,6 +202,13 @@ func TestRenderSchema(t *testing.T) {
 		Data: testSchema,
 	})
 	require.NoError(t, err)
+
+	if os.Getenv("REWRITE_TESTDATA") == "true" {
+		err = os.WriteFile("testdata/schema.svg", actual, 0644)
+		require.NoError(t, err)
+
+		return
+	}
 
 	assert.Equal(t, testSVG, actual)
 }

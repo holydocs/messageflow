@@ -89,6 +89,7 @@ func (s *Source) createOperation(op *asyncapiv3.Operation) *messageflow.Operatio
 	}
 
 	mainMsgPayload, replyMsgPayload := s.extractMainMessagePayload(op), s.extractReplyMessagePayload(op)
+	mainMsgName, replyMsgName := s.extractMainMessageName(op), s.extractReplyMessageName(op)
 
 	jsonSchema, err := jsonMessage(mainMsgPayload)
 	if err != nil {
@@ -96,8 +97,14 @@ func (s *Source) createOperation(op *asyncapiv3.Operation) *messageflow.Operatio
 	}
 
 	operation := messageflow.Operation{
-		Action:  messageflow.Action(op.Action),
-		Channel: messageflow.Channel{Name: channel.Address, Message: jsonSchema},
+		Action: messageflow.Action(op.Action),
+		Channel: messageflow.Channel{
+			Name: channel.Address,
+			Message: messageflow.Message{
+				Name:    mainMsgName,
+				Payload: jsonSchema,
+			},
+		},
 	}
 
 	if replyMsgPayload != nil {
@@ -108,8 +115,11 @@ func (s *Source) createOperation(op *asyncapiv3.Operation) *messageflow.Operatio
 				return nil
 			}
 			operation.Reply = &messageflow.Channel{
-				Name:    replyChannel.Address,
-				Message: replySchema,
+				Name: replyChannel.Address,
+				Message: messageflow.Message{
+					Name:    replyMsgName,
+					Payload: replySchema,
+				},
 			}
 		}
 	}
@@ -148,6 +158,82 @@ func (s *Source) extractReplyMessagePayload(op *asyncapiv3.Operation) *asyncapiv
 	}
 
 	return msg.Payload
+}
+
+// extractMainMessageName extracts the main message name from an operation.
+func (s *Source) extractMainMessageName(op *asyncapiv3.Operation) string {
+	if len(op.Messages) == 0 || op.Messages[0] == nil {
+		return ""
+	}
+
+	channel := op.Channel.Follow()
+	if channel == nil {
+		return ""
+	}
+
+	msgRef := op.Messages[0]
+	if msgRef == nil {
+		return ""
+	}
+
+	msg := msgRef
+	for msg != nil && msg.ReferenceTo != nil {
+		msg = msg.ReferenceTo
+	}
+
+	if msg != nil && msg.ReferenceTo == nil {
+		// Try to get the name from the message definition itself
+		if msg.Name != "" {
+			return msg.Name
+		}
+	}
+
+	// If we can't get the name directly, try to extract it from the channel's message map
+	if channel.Messages != nil {
+		for msgName := range channel.Messages {
+			return msgName
+		}
+	}
+
+	return ""
+}
+
+// extractReplyMessageName extracts the reply message name from an operation.
+func (s *Source) extractReplyMessageName(op *asyncapiv3.Operation) string {
+	if op.Reply == nil {
+		return ""
+	}
+
+	replyChannel := op.Reply.Channel.Follow()
+	if replyChannel == nil || len(op.Reply.Messages) == 0 || op.Reply.Messages[0] == nil {
+		return ""
+	}
+
+	msgRef := op.Reply.Messages[0]
+	if msgRef == nil {
+		return ""
+	}
+
+	msg := msgRef
+	for msg != nil && msg.ReferenceTo != nil {
+		msg = msg.ReferenceTo
+	}
+
+	if msg != nil && msg.ReferenceTo == nil {
+		// Try to get the name from the message definition itself
+		if msg.Name != "" {
+			return msg.Name
+		}
+	}
+
+	// If we can't get the name directly, try to extract it from the channel's message map
+	if replyChannel.Messages != nil {
+		for msgName := range replyChannel.Messages {
+			return msgName
+		}
+	}
+
+	return ""
 }
 
 // jsonMessage converts an AsyncAPI schema into a pretty-printed JSON string.

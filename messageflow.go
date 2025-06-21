@@ -45,10 +45,16 @@ const (
 	ActionReceive Action = "receive"
 )
 
-// Channel represents a communication channel with a name and message type.
-type Channel struct {
+// Message represents a message with a name and payload.
+type Message struct {
 	Name    string `json:"name"`
-	Message string `json:"message"`
+	Payload string `json:"payload"`
+}
+
+// Channel represents a communication channel with a name and message.
+type Channel struct {
+	Name    string  `json:"name"`
+	Message Message `json:"message"`
 }
 
 // Operation defines an action to be performed on a channel, optionally with a reply channel.
@@ -111,12 +117,12 @@ func MergeSchemas(schemas ...Schema) Schema {
 				opMap := make(map[string]Operation)
 
 				for _, op := range existingService.Operation {
-					key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message)
+					key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message.Name)
 					opMap[key] = op
 				}
 
 				for _, op := range service.Operation {
-					key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message)
+					key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message.Name)
 					opMap[key] = op
 				}
 
