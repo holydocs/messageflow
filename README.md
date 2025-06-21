@@ -4,7 +4,7 @@
 [![Go Report Card](https://goreportcard.com/badge/github.com/denchenko/messageflow)](https://goreportcard.com/report/github.com/denchenko/messageflow)
 [![GoDoc](https://godoc.org/github.com/denchenko/messageflow?status.svg)](https://godoc.org/github.com/denchenko/messageflow)
 
-MessageFlow is a Go library for visualizing AsyncAPI specifications. It provides tools to parse AsyncAPI documents and transform them into visual formats, making it easier to understand message flows and service interactions in asynchronous systems.
+MessageFlow is a Go library and CLI tool for visualizing AsyncAPI specifications. It provides tools to parse AsyncAPI documents and transform them into visual formats, making it easier to understand message flows and service interactions in asynchronous systems.
 
 Example of visualizing a Notification service using [this](source/asyncapi/testdata/notification.yaml) AsyncAPI specification. Message payloads are displayed as thumbnails when hovering over specific queues. This approach was chosen to keep the schema clean and uncluttered.
 
@@ -12,13 +12,27 @@ Example of visualizing a Notification service using [this](source/asyncapi/testd
 
 ## Usage
 
-### As a CLI Tool
+### CLI
 
-MessageFlow can be used directly from the command line:
+MessageFlow provides a command-line interface.
 
 ```bash
-go install github.com/denchenko/messageflow/cmd/messageflow
-messageflow --render-to-file schema.svg --asyncapi-file asyncapi.yaml
+go install github.com/denchenko/messageflow/cmd/messageflow@latest
+```
+
+#### Generate Schema
+
+The `gen-schema` command processes AsyncAPI files and generates formatted schemas or rendered diagrams:
+
+```bash
+# Generate and render a diagram
+messageflow gen-schema --target d2 --render-to-file schema.svg --asyncapi-files asyncapi.yaml
+
+# Generate formatted schema only
+messageflow gen-schema --format-to-file schema.d2 --asyncapi-files asyncapi.yaml
+
+# Process multiple AsyncAPI files
+messageflow gen-schema --render-to-file combined.svg --asyncapi-files "file1.yaml,file2.yaml,file3.yaml"
 ```
 
 ### As a Library
@@ -84,8 +98,3 @@ func main() {
 	fmt.Println("Diagram generated successfully!")
 }
 ```
-
-## Dependencies
-
-- [asyncapi-codegen](https://github.com/lerenn/asyncapi-codegen) - AsyncAPI code generation
-- [d2](https://github.com/terrastruct/d2) - Diagram generation
