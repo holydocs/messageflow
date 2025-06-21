@@ -21,7 +21,8 @@ func TestExtractSchema(t *testing.T) {
 	expected := messageflow.Schema{
 		Services: []messageflow.Service{
 			{
-				Name: "Notification Service",
+				Name:        "Notification Service",
+				Description: "A service that handles user notifications, preferences, and interactions.\nSupports real-time notifications, user preferences management.\n",
 				Operation: []messageflow.Operation{
 					{
 						Action: messageflow.ActionReceive,

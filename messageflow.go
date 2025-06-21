@@ -33,8 +33,9 @@ type Schema struct {
 
 // Service represents a service in the message flow with its name and operations.
 type Service struct {
-	Name      string      `json:"name"`
-	Operation []Operation `json:"operations"`
+	Name        string      `json:"name"`
+	Description string      `json:"description,omitempty"`
+	Operation   []Operation `json:"operations"`
 }
 
 // Action represents the type of operation that can be performed on a channel.

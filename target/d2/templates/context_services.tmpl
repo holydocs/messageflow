@@ -1,7 +1,9 @@
 {{- range .Services }}
-'{{.Name}}': {
-  shape: rectangle
-}
+'{{.Name}}': |md
+# {{.Name}}
+{{.Description}}
+|
+'{{.Name}}'.shape: rectangle
 {{- end }}
 
 {{- range .Connections }}

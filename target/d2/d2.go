@@ -7,6 +7,7 @@ import (
 	"embed"
 	"fmt"
 	"sort"
+	"strings"
 	"text/template"
 
 	"github.com/denchenko/messageflow"
@@ -14,7 +15,6 @@ import (
 	"oss.terrastruct.com/d2/d2layouts/d2elklayout"
 	"oss.terrastruct.com/d2/d2lib"
 	"oss.terrastruct.com/d2/d2renderers/d2svg"
-	"oss.terrastruct.com/d2/d2themes/d2themescatalog"
 	"oss.terrastruct.com/d2/lib/log"
 	"oss.terrastruct.com/d2/lib/textmeasure"
 	"oss.terrastruct.com/util-go/go2"
@@ -71,20 +71,20 @@ func WithCompileOpts(compileOpts *d2lib.CompileOptions) TargetOpt {
 // It initializes the template from the embedded schema.tmpl file and sets up default
 // rendering and compilation options. The formatter uses the ELK layout engine for
 // diagram arrangement.
-func NewTarget() (*Target, error) {
+func NewTarget(opts ...TargetOpt) (*Target, error) {
 	serviceChannelsTemplate, err := template.ParseFS(serviceChannelsTemplateFS, "templates/service_channels.tmpl")
 	if err != nil {
-		return nil, fmt.Errorf("parsing template: %w", err)
+		return nil, fmt.Errorf("parsing service channels template: %w", err)
 	}
 
 	channelServicesTemplate, err := template.ParseFS(channelServicesTemplateFS, "templates/channel_services.tmpl")
 	if err != nil {
-		return nil, fmt.Errorf("parsing template: %w", err)
+		return nil, fmt.Errorf("parsing channel services template: %w", err)
 	}
 
 	contextServicesTemplate, err := template.ParseFS(contextServicesTemplateFS, "templates/context_services.tmpl")
 	if err != nil {
-		return nil, fmt.Errorf("parsing template: %w", err)
+		return nil, fmt.Errorf("parsing context services template: %w", err)
 	}
 
 	ruler, err := textmeasure.NewRuler()
@@ -96,19 +96,24 @@ func NewTarget() (*Target, error) {
 		return d2elklayout.DefaultLayout, nil
 	}
 
-	return &Target{
+	t := &Target{
 		serviceChannelsTemplate: serviceChannelsTemplate,
 		channelServicesTemplate: channelServicesTemplate,
 		contextServicesTemplate: contextServicesTemplate,
 		renderOpts: &d2svg.RenderOpts{
-			Pad:     go2.Pointer(int64(5)),
-			ThemeID: &d2themescatalog.Terminal.ID,
+			Pad: go2.Pointer(int64(5)),
 		},
 		compileOpts: &d2lib.CompileOptions{
 			LayoutResolver: layoutResolver,
 			Ruler:          ruler,
 		},
-	}, nil
+	}
+
+	for _, opt := range opts {
+		opt(t)
+	}
+
+	return t, nil
 }
 
 // Capabilities returns target capabilities.
@@ -255,8 +260,17 @@ func prepareChannelServicesPayload(s messageflow.Schema, channel string) channel
 }
 
 func prepareContextServicesPayload(s messageflow.Schema) contextServicesPayload {
+	formattedServices := make([]messageflow.Service, len(s.Services))
+	for i, service := range s.Services {
+		formattedServices[i] = messageflow.Service{
+			Name:        service.Name,
+			Description: formatDescription(service.Description),
+			Operation:   service.Operation,
+		}
+	}
+
 	payload := contextServicesPayload{
-		Services:    s.Services,
+		Services:    formattedServices,
 		Connections: []connection{},
 	}
 
@@ -328,6 +342,31 @@ func prepareContextServicesPayload(s messageflow.Schema) contextServicesPayload 
 	}
 
 	return payload
+}
+
+// formatDescription formats a description string by adding newlines every 7 words for better readability in D2 diagrams.
+func formatDescription(desc string) string {
+	if desc == "" {
+		return ""
+	}
+
+	words := strings.Fields(desc)
+	if len(words) <= 7 {
+		return desc
+	}
+
+	// Group words into chunks of 7
+	var lines []string
+	for i := 0; i < len(words); i += 7 {
+		end := i + 7
+		if end > len(words) {
+			end = len(words)
+		}
+		lines = append(lines, strings.Join(words[i:end], " "))
+	}
+
+	// For markdown we need to use 2 spaces for newlines
+	return strings.Join(lines, "  \n")
 }
 
 func determineConnectionLabel(s messageflow.Schema, service1, service2 string) string {

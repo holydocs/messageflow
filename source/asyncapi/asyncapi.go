@@ -67,8 +67,9 @@ func (s *Source) loadAndProcessSpec() (*asyncapiv3.Specification, error) {
 // createServiceFromSpec creates a messageflow.Service from an AsyncAPI v3 specification.
 func (s *Source) createServiceFromSpec(spec *asyncapiv3.Specification) messageflow.Service {
 	service := messageflow.Service{
-		Name:      spec.Info.Title,
-		Operation: make([]messageflow.Operation, 0),
+		Name:        spec.Info.Title,
+		Description: spec.Info.Description,
+		Operation:   make([]messageflow.Operation, 0),
 	}
 
 	for _, op := range spec.Operations {
