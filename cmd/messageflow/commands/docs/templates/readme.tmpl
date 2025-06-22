@@ -11,6 +11,9 @@
 {{- range .Channels }}
   - [{{.}}](#{{Anchor .}})
 {{- end }}
+{{- if .Changelogs }}
+- [Changelog](#changelog)
+{{- end }}
 
 ## Context
 
@@ -35,6 +38,31 @@
 ### {{.}}
 
 ![{{.}} Channel Services](diagrams/channel_{{Anchor .}}.svg)
+
+{{- end }}
+
+{{- if .Changelogs }}
+
+## Changelog
+
+{{- range SortChangelogs .Changelogs }}
+
+### {{.Date.Format "2006-01-02"}}
+
+{{- if .Changes }}
+{{- range .Changes }}
+- **{{.Type}}** {{.Category}}: {{.Details}}
+{{- if .Diff }}
+```json
+{{.Diff}}
+```
+{{- end }}
+{{- end }}
+{{- else }}
+- No changes detected
+{{- end }}
+
+{{- end }}
 
 {{- end }}
 

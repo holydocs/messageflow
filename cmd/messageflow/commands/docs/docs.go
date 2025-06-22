@@ -3,7 +3,9 @@ package docs
 import (
 	"context"
 	"embed"
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -115,6 +117,36 @@ func (c *Command) generateDocumentation(
 	target messageflow.Target,
 	title, outputDir string,
 ) error {
+	existingSchema, err := c.readExistingSchema(outputDir)
+	if err != nil {
+		return fmt.Errorf("error reading existing schema: %w", err)
+	}
+
+	existingChangelogs, err := c.readExistingChangelogs(outputDir)
+	if err != nil {
+		return fmt.Errorf("error reading existing changelogs: %w", err)
+	}
+
+	var newChangelog *messageflow.Changelog
+	if existingSchema != nil {
+		changelog := messageflow.CompareSchemas(*existingSchema, schema)
+		if len(changelog.Changes) > 0 {
+			newChangelog = &changelog
+		}
+	}
+
+	if newChangelog != nil {
+		existingChangelogs = append(existingChangelogs, *newChangelog)
+	}
+
+	if err := c.writeSchema(outputDir, schema); err != nil {
+		return fmt.Errorf("error writing schema: %w", err)
+	}
+
+	if err := c.writeChangelogs(outputDir, existingChangelogs); err != nil {
+		return fmt.Errorf("error writing changelogs: %w", err)
+	}
+
 	contextDiagram, err := c.generateContextDiagram(ctx, schema, target)
 	if err != nil {
 		return fmt.Errorf("error generating context diagram: %w", err)
@@ -143,7 +175,7 @@ func (c *Command) generateDocumentation(
 		return fmt.Errorf("error writing diagram files: %w", err)
 	}
 
-	readmeContent, err := c.createREADMEContent(schema, title)
+	readmeContent, err := c.createREADMEContent(schema, title, existingChangelogs)
 	if err != nil {
 		return fmt.Errorf("error creating README content: %w", err)
 	}
@@ -247,10 +279,20 @@ func (c *Command) extractUniqueChannels(schema messageflow.Schema) []string {
 	return channels
 }
 
-func (c *Command) createREADMEContent(schema messageflow.Schema, title string) (string, error) {
+func (c *Command) createREADMEContent(schema messageflow.Schema, title string, changelogs []messageflow.Changelog) (string, error) {
 	tmpl, err := template.New("readme.tmpl").Funcs(template.FuncMap{
 		"Anchor": func(name string) string {
 			return sanitizeAnchor(name)
+		},
+		"SortChangelogs": func(changelogs []messageflow.Changelog) []messageflow.Changelog {
+			sorted := make([]messageflow.Changelog, len(changelogs))
+			copy(sorted, changelogs)
+
+			sort.Slice(sorted, func(i, j int) bool {
+				return sorted[i].Date.After(sorted[j].Date)
+			})
+
+			return sorted
 		},
 	}).ParseFS(readmeTemplateFS, "templates/readme.tmpl")
 	if err != nil {
@@ -264,13 +306,15 @@ func (c *Command) createREADMEContent(schema messageflow.Schema, title string) (
 	})
 
 	data := struct {
-		Title    string
-		Services []messageflow.Service
-		Channels []string
+		Title      string
+		Services   []messageflow.Service
+		Channels   []string
+		Changelogs []messageflow.Changelog
 	}{
-		Title:    title,
-		Services: schema.Services,
-		Channels: channels,
+		Title:      title,
+		Services:   schema.Services,
+		Channels:   channels,
+		Changelogs: changelogs,
 	}
 
 	var buf strings.Builder
@@ -283,6 +327,11 @@ func (c *Command) createREADMEContent(schema messageflow.Schema, title string) (
 
 func (c *Command) writeDiagramFiles(outputDir string, contextDiagram []byte, serviceDiagrams, channelDiagrams map[string][]byte) error {
 	diagramsDir := filepath.Join(outputDir, "diagrams")
+
+	if err := os.RemoveAll(diagramsDir); err != nil {
+		return fmt.Errorf("error removing old diagrams directory: %w", err)
+	}
+
 	if err := os.MkdirAll(diagramsDir, 0755); err != nil {
 		return fmt.Errorf("error creating diagrams directory: %w", err)
 	}
@@ -319,4 +368,74 @@ func sanitizeAnchor(name string) string {
 	anchor = strings.ReplaceAll(anchor, "{", "")
 	anchor = strings.ReplaceAll(anchor, "}", "")
 	return anchor
+}
+
+func (c *Command) readExistingChangelogs(outputDir string) ([]messageflow.Changelog, error) {
+	changelogPath := filepath.Join(outputDir, "changelog.json")
+
+	if _, err := os.Stat(changelogPath); os.IsNotExist(err) {
+		return []messageflow.Changelog{}, nil
+	}
+
+	data, err := ioutil.ReadFile(changelogPath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading changelog file: %w", err)
+	}
+
+	var changelogs []messageflow.Changelog
+	if err := json.Unmarshal(data, &changelogs); err != nil {
+		return nil, fmt.Errorf("error unmarshaling changelog data: %w", err)
+	}
+
+	return changelogs, nil
+}
+
+func (c *Command) writeChangelogs(outputDir string, changelogs []messageflow.Changelog) error {
+	changelogPath := filepath.Join(outputDir, "changelog.json")
+
+	data, err := json.MarshalIndent(changelogs, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling changelog data: %w", err)
+	}
+
+	if err := ioutil.WriteFile(changelogPath, data, 0644); err != nil {
+		return fmt.Errorf("error writing changelog file: %w", err)
+	}
+
+	return nil
+}
+
+func (c *Command) readExistingSchema(outputDir string) (*messageflow.Schema, error) {
+	schemaPath := filepath.Join(outputDir, "schema.json")
+
+	if _, err := os.Stat(schemaPath); os.IsNotExist(err) {
+		return nil, nil
+	}
+
+	data, err := ioutil.ReadFile(schemaPath)
+	if err != nil {
+		return nil, fmt.Errorf("error reading schema file: %w", err)
+	}
+
+	var schema messageflow.Schema
+	if err := json.Unmarshal(data, &schema); err != nil {
+		return nil, fmt.Errorf("error unmarshaling schema data: %w", err)
+	}
+
+	return &schema, nil
+}
+
+func (c *Command) writeSchema(outputDir string, schema messageflow.Schema) error {
+	schemaPath := filepath.Join(outputDir, "schema.json")
+
+	data, err := json.MarshalIndent(schema, "", "  ")
+	if err != nil {
+		return fmt.Errorf("error marshaling schema data: %w", err)
+	}
+
+	if err := ioutil.WriteFile(schemaPath, data, 0644); err != nil {
+		return fmt.Errorf("error writing schema file: %w", err)
+	}
+
+	return nil
 }

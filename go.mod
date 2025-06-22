@@ -3,7 +3,9 @@ module github.com/denchenko/messageflow
 go 1.23.9
 
 require (
+	github.com/google/go-cmp v0.7.0
 	github.com/lerenn/asyncapi-codegen v0.46.2
+	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
 	oss.terrastruct.com/d2 v0.7.0
 	oss.terrastruct.com/util-go v0.0.0-20250213174338-243d8661088a
@@ -27,7 +29,6 @@ require (
 	github.com/mohae/deepcopy v0.0.0-20170929034955-c48cc78d4826 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
-	github.com/spf13/cobra v1.9.1 // indirect
 	github.com/spf13/pflag v1.0.6 // indirect
 	github.com/yuin/goldmark v1.7.4 // indirect
 	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect

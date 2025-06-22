@@ -6,6 +6,9 @@ package messageflow
 import (
 	"context"
 	"fmt"
+	"time"
+
+	"github.com/google/go-cmp/cmp"
 )
 
 // TargetType represents the type of target format for schema conversion.
@@ -77,6 +80,31 @@ type TargetCapabilities struct {
 	Render bool
 }
 
+// ChangeType represents the type of change that occurred.
+type ChangeType string
+
+const (
+	ChangeTypeAdded   ChangeType = "added"
+	ChangeTypeRemoved ChangeType = "removed"
+	ChangeTypeChanged ChangeType = "changed"
+)
+
+// Change represents a single change in the schema.
+type Change struct {
+	Type      ChangeType `json:"type"`
+	Category  string     `json:"category"` // "service", "channel", "message"
+	Name      string     `json:"name"`
+	Details   string     `json:"details,omitempty"`
+	Diff      string     `json:"diff,omitempty"`
+	Timestamp time.Time  `json:"timestamp"`
+}
+
+// Changelog represents a collection of changes with a version and date.
+type Changelog struct {
+	Date    time.Time `json:"date"`
+	Changes []Change  `json:"changes"`
+}
+
 // Source interface defines the contract for schema extraction.
 type Source interface {
 	SchemaExtractor
@@ -146,4 +174,174 @@ func MergeSchemas(schemas ...Schema) Schema {
 	}
 
 	return Schema{Services: mergedServices}
+}
+
+// CompareSchemas compares two schemas and returns a changelog of differences.
+func CompareSchemas(oldSchema, newSchema Schema) Changelog {
+	changes := []Change{}
+	now := time.Now()
+
+	oldServices := make(map[string]Service)
+	newServices := make(map[string]Service)
+
+	for _, service := range oldSchema.Services {
+		oldServices[service.Name] = service
+	}
+
+	for _, service := range newSchema.Services {
+		newServices[service.Name] = service
+	}
+
+	for name, newService := range newServices {
+		if _, exists := oldServices[name]; !exists {
+			changes = append(changes, Change{
+				Type:      ChangeTypeAdded,
+				Category:  "service",
+				Name:      name,
+				Details:   fmt.Sprintf("Service '%s' was added", newService.Name),
+				Timestamp: now,
+			})
+		}
+	}
+
+	for name, oldService := range oldServices {
+		if _, exists := newServices[name]; !exists {
+			changes = append(changes, Change{
+				Type:      ChangeTypeRemoved,
+				Category:  "service",
+				Name:      name,
+				Details:   fmt.Sprintf("Service '%s' was removed", name),
+				Timestamp: now,
+			})
+		} else {
+			// Compare operations within the same service
+			serviceChanges := compareServiceOperations(oldService, newServices[name], now)
+			changes = append(changes, serviceChanges...)
+		}
+	}
+
+	return Changelog{
+		Date:    now,
+		Changes: changes,
+	}
+}
+
+func compareServiceOperations(oldService, newService Service, timestamp time.Time) []Change {
+	changes := []Change{}
+
+	oldOps := make(map[string]Operation)
+	newOps := make(map[string]Operation)
+
+	for _, op := range oldService.Operation {
+		key := operationKey(op)
+		oldOps[key] = op
+	}
+
+	for _, op := range newService.Operation {
+		key := operationKey(op)
+		newOps[key] = op
+	}
+
+	for key, newOp := range newOps {
+		if _, exists := oldOps[key]; !exists {
+			changes = append(changes, Change{
+				Type:     ChangeTypeAdded,
+				Category: "operation",
+				Name:     fmt.Sprintf("%s:%s", newService.Name, key),
+				Details: fmt.Sprintf(
+					"Operation '%s' on channel '%s' was added to service '%s'",
+					newOp.Action, newOp.Channel.Name, newService.Name,
+				),
+				Timestamp: timestamp,
+			})
+		}
+	}
+
+	for key, oldOp := range oldOps {
+		if _, exists := newOps[key]; !exists {
+			changes = append(changes, Change{
+				Type:     ChangeTypeRemoved,
+				Category: "operation",
+				Name:     fmt.Sprintf("%s:%s", oldService.Name, key),
+				Details: fmt.Sprintf(
+					"Operation '%s' on channel '%s' was removed from service '%s'",
+					oldOp.Action, oldOp.Channel.Name, oldService.Name,
+				),
+				Timestamp: timestamp,
+			})
+		} else {
+			newOp := newOps[key]
+			if !cmp.Equal(oldOp.Channel.Message.Payload, newOp.Channel.Message.Payload) {
+				diff := cmp.Diff(
+					oldOp.Channel.Message.Payload,
+					newOp.Channel.Message.Payload,
+				)
+
+				changes = append(changes, Change{
+					Type:     ChangeTypeChanged,
+					Category: "message",
+					Name:     fmt.Sprintf("%s:%s", newService.Name, key),
+					Details: fmt.Sprintf(
+						"Message payload changed for operation '%s' on channel '%s' in service '%s'",
+						newOp.Action, newOp.Channel.Name, newService.Name,
+					),
+					Diff:      diff,
+					Timestamp: timestamp,
+				})
+			}
+
+			if oldOp.Reply != nil && newOp.Reply != nil {
+				if !cmp.Equal(oldOp.Reply.Message.Payload, newOp.Reply.Message.Payload) {
+					diff := cmp.Diff(
+						oldOp.Reply.Message.Payload,
+						newOp.Reply.Message.Payload,
+					)
+
+					changes = append(changes, Change{
+						Type:     ChangeTypeChanged,
+						Category: "message",
+						Name:     fmt.Sprintf("%s:%s:reply", newService.Name, key),
+						Details: fmt.Sprintf(
+							"Reply message payload changed for operation '%s' on channel '%s' in service '%s'",
+							newOp.Action, newOp.Channel.Name, newService.Name,
+						),
+						Diff:      diff,
+						Timestamp: timestamp,
+					})
+				}
+			} else if oldOp.Reply != nil && newOp.Reply == nil {
+				changes = append(changes, Change{
+					Type:     ChangeTypeRemoved,
+					Category: "operation",
+					Name:     fmt.Sprintf("%s:%s:reply", newService.Name, key),
+					Details: fmt.Sprintf(
+						"Reply channel removed for operation '%s' on channel '%s' in service '%s'",
+						newOp.Action, newOp.Channel.Name, newService.Name,
+					),
+					Timestamp: timestamp,
+				})
+			} else if oldOp.Reply == nil && newOp.Reply != nil {
+				changes = append(changes, Change{
+					Type:     ChangeTypeAdded,
+					Category: "operation",
+					Name:     fmt.Sprintf("%s:%s:reply", newService.Name, key),
+					Details: fmt.Sprintf(
+						"Reply channel added for operation '%s' on channel '%s' in service '%s'",
+						newOp.Action, newOp.Channel.Name, newService.Name,
+					),
+					Timestamp: timestamp,
+				})
+			}
+		}
+	}
+
+	return changes
+}
+
+func operationKey(op Operation) string {
+	key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message.Name)
+	if op.Reply != nil {
+		key += fmt.Sprintf("-reply-%s-%s", op.Reply.Name, op.Reply.Message.Name)
+	}
+	return key
 }
