@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/denchenko/messageflow/cmd/messageflow/commands/docs"
 	"github.com/denchenko/messageflow/cmd/messageflow/commands/schema"
 	"github.com/spf13/cobra"
 )
@@ -15,6 +16,7 @@ func main() {
 		Long:  `MessageFlow is a tool for generating schemas/docs from AsyncAPI schemas.`}
 
 	rootCmd.AddCommand(schema.NewCommand().GetCommand())
+	rootCmd.AddCommand(docs.NewCommand().GetCommand())
 
 	if err := rootCmd.Execute(); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %v\n", err)

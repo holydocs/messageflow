@@ -1,0 +1,40 @@
+# {{.Title}}
+
+## Table of Contents
+
+- [Context](#context)
+- [Services](#services)
+{{- range .Services }}
+  - [{{.Name}}](#{{Anchor .Name}})
+{{- end }}
+- [Channels](#channels)
+{{- range .Channels }}
+  - [{{.}}](#{{Anchor .}})
+{{- end }}
+
+## Context
+
+![Context](diagrams/context.svg)
+
+## Services
+
+{{- range .Services }}
+
+### {{.Name}}
+
+{{.Description}}
+
+![{{.Name}} Service Channels](diagrams/service_{{Anchor .Name}}.svg)
+
+{{- end }}
+
+## Channels
+
+{{- range .Channels }}
+
+### {{.}}
+
+![{{.}} Channel Services](diagrams/channel_{{Anchor .}}.svg)
+
+{{- end }}
+
