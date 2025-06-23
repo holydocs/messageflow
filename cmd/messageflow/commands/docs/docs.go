@@ -296,6 +296,20 @@ func (c *Command) createREADMEContent(schema messageflow.Schema, title string, c
 				return sorted[i].Date.After(sorted[j].Date)
 			})
 
+			for i := range sorted {
+				sort.Slice(sorted[i].Changes, func(a, b int) bool {
+					if sorted[i].Changes[a].Type != sorted[i].Changes[b].Type {
+						return string(sorted[i].Changes[a].Type) < string(sorted[i].Changes[b].Type)
+					}
+
+					if sorted[i].Changes[a].Category != sorted[i].Changes[b].Category {
+						return sorted[i].Changes[a].Category < sorted[i].Changes[b].Category
+					}
+
+					return sorted[i].Changes[a].Name < sorted[i].Changes[b].Name
+				})
+			}
+
 			return sorted
 		},
 	}).ParseFS(readmeTemplateFS, "templates/readme.tmpl")
