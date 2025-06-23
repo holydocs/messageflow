@@ -39,6 +39,7 @@ Example:
 	c.cmd.Flags().String("channel", "", "Channel")
 	c.cmd.Flags().String("service", "", "Service")
 	c.cmd.Flags().String("format-mode", "service_channels", "Format mode")
+	c.cmd.Flags().Bool("omit-payloads", false, "Omit payloads")
 
 	// Mark required flags
 	err := c.cmd.MarkFlagRequired("asyncapi-files")
@@ -91,6 +92,11 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("error getting format-mode flag: %w", err)
 	}
 
+	omitPayloads, err := cmd.Flags().GetBool("omit-payloads")
+	if err != nil {
+		return fmt.Errorf("error getting omit-payloads flag: %w", err)
+	}
+
 	// Validate that at least one output is specified
 	if formatToFile == "" && renderToFile == "" {
 		return errors.New("either --format-to-file or --render-to-file must be specified")
@@ -134,9 +140,10 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 	schema := messageflow.MergeSchemas(schemas...)
 
 	formatOpts := messageflow.FormatOptions{
-		Mode:    messageflow.FormatMode(formatMode),
-		Service: service,
-		Channel: channel,
+		Mode:         messageflow.FormatMode(formatMode),
+		Service:      service,
+		Channel:      channel,
+		OmitPayloads: omitPayloads,
 	}
 
 	fs, err := target.FormatSchema(ctx, schema, formatOpts)

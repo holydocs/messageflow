@@ -212,3 +212,76 @@ func TestRenderSchema(t *testing.T) {
 
 	assert.Equal(t, testSVG, actual)
 }
+
+func TestFormatSchemaChannelServicesWithOmitPayloads(t *testing.T) {
+	t.Parallel()
+
+	schema := messageflow.Schema{
+		Services: []messageflow.Service{
+			{
+				Name: "Notification Service",
+				Operation: []messageflow.Operation{
+					{
+						Action: messageflow.ActionSend,
+						Channel: messageflow.Channel{
+							Name: "notification.send",
+							Message: messageflow.Message{
+								Name:    "NotificationMessage",
+								Payload: `{"message": "test"}`,
+							},
+						},
+					},
+				},
+			},
+			{
+				Name: "User Service",
+				Operation: []messageflow.Operation{
+					{
+						Action: messageflow.ActionReceive,
+						Channel: messageflow.Channel{
+							Name: "notification.send",
+							Message: messageflow.Message{
+								Name:    "NotificationMessage",
+								Payload: `{"message": "test"}`,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	target, err := NewTarget()
+	require.NoError(t, err)
+
+	// Test with OmitPayloads = false (default behavior)
+	actual, err := target.FormatSchema(ctx, schema, messageflow.FormatOptions{
+		Mode:         messageflow.FormatModeChannelServices,
+		Channel:      "notification.send",
+		OmitPayloads: false,
+	})
+	require.NoError(t, err)
+
+	// Should contain payload information
+	actualStr := string(actual.Data)
+	assert.Contains(t, actualStr, "Message(NotificationMessage):")
+	assert.Contains(t, actualStr, `{"message": "test"}`)
+
+	// Test with OmitPayloads = true
+	actualOmitted, err := target.FormatSchema(ctx, schema, messageflow.FormatOptions{
+		Mode:         messageflow.FormatModeChannelServices,
+		Channel:      "notification.send",
+		OmitPayloads: true,
+	})
+	require.NoError(t, err)
+
+	// Should not contain payload information
+	actualOmittedStr := string(actualOmitted.Data)
+	assert.NotContains(t, actualOmittedStr, "Message(NotificationMessage):")
+	assert.NotContains(t, actualOmittedStr, `{"message": "test"}`)
+	assert.Contains(t, actualOmittedStr, "notification.send")
+	assert.Contains(t, actualOmittedStr, "Notification Service")
+	assert.Contains(t, actualOmittedStr, "User Service")
+}

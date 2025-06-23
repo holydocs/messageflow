@@ -24,9 +24,10 @@ const (
 )
 
 type FormatOptions struct {
-	Mode    FormatMode
-	Service string
-	Channel string
+	Mode         FormatMode
+	Service      string
+	Channel      string
+	OmitPayloads bool
 }
 
 // Schema defines the structure of a message flow schema containing services and their operations.

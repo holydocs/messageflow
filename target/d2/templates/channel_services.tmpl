@@ -2,7 +2,7 @@
   shape: queue
 }
 
-{{- if .Message }}
+{{- if and .Message (not .OmitPayloads) }}
 {{- if .ReplyMessage }}
 'request': |json
 Request({{.MessageName}}):
@@ -20,7 +20,7 @@ Message({{.MessageName}}):
 {{- end }}
 {{- end }}
 
-{{- if .ReplyMessage }}
+{{- if and .ReplyMessage (not .OmitPayloads) }}
 'reply': |json
 Reply({{.ReplyMessageName}}):
 {{.ReplyMessage}}

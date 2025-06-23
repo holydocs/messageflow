@@ -132,6 +132,7 @@ type channelServicesPayload struct {
 	ReplyMessageName *string
 	Senders          []string
 	Receivers        []string
+	OmitPayloads     bool
 }
 
 type contextServicesPayload struct {
@@ -173,7 +174,7 @@ func (t *Target) FormatSchema(
 			return messageflow.FormattedSchema{}, fmt.Errorf("executing service channels template: %w", err)
 		}
 	case messageflow.FormatModeChannelServices:
-		payload := prepareChannelServicesPayload(s, opts.Channel)
+		payload := prepareChannelServicesPayload(s, opts.Channel, opts.OmitPayloads)
 
 		err := t.channelServicesTemplate.Execute(&buf, payload)
 		if err != nil {
@@ -227,9 +228,10 @@ func prepareServiceChannelsPayload(s messageflow.Schema, serviceName string) mes
 	return messageflow.Service{}
 }
 
-func prepareChannelServicesPayload(s messageflow.Schema, channel string) channelServicesPayload {
+func prepareChannelServicesPayload(s messageflow.Schema, channel string, omitPayloads bool) channelServicesPayload {
 	payload := channelServicesPayload{
-		Channel: channel,
+		Channel:      channel,
+		OmitPayloads: omitPayloads,
 	}
 
 	for _, service := range s.Services {
