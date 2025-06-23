@@ -47,19 +47,7 @@ Message(PushNotification):
     shape: queue
     tooltip: ||json
 Message(AnalyticsEvent):
-{
-  "event_id": "string[uuid]",
-  "event_type": "string[enum:notification_sent,notification_opened,notification_clicked]",
-  "metadata": {
-    "environment": "string[enum:development,staging,production]",
-    "platform": "string[enum:ios,android,web]",
-    "source": "string[enum:mobile,web,api]",
-    "version": "string"
-  },
-  "notification_id": "string[uuid]",
-  "timestamp": "string[date-time]",
-  "user_id": "string[uuid]"
-}
+{"event_type": "string", "user_id": "string[uuid]"}
     ||
   }
 }
@@ -100,25 +88,13 @@ Reply(PreferencesReply):
     shape: queue
     tooltip: ||json
 Request(UserInfoRequest):
-{
-  "user_id": "string[uuid]"
-}
+{"user_id": "string[uuid]"}
 Reply(UserInfoReply):
-{
-  "email": "string[email]",
-  "error": {
-    "code": "string",
-    "message": "string"
-  },
-  "language": "string",
-  "name": "string",
-  "timezone": "string",
-  "user_id": "string[uuid]"
-}
+{"email": "string[email]", "name": "string"}
     ||
   }
 }
 'Receive From' -> 'Notification Service'
 'Notification Service' -> 'Send To'
-'Reply To' -> 'Notification Service'
+'Reply To' <- 'Notification Service'
 'Notification Service' -> 'Request From'

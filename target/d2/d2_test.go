@@ -114,27 +114,15 @@ func TestFormatSchema(t *testing.T) {
 						Channel: messageflow.Channel{
 							Name: "user.info.request",
 							Message: messageflow.Message{
-								Name: "UserInfoRequest",
-								Payload: `{
-  "user_id": "string[uuid]"
-}`,
+								Name:    "UserInfoRequest",
+								Payload: `{"user_id": "string[uuid]"}`,
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "user.info.request",
 							Message: messageflow.Message{
-								Name: "UserInfoReply",
-								Payload: `{
-  "email": "string[email]",
-  "error": {
-    "code": "string",
-    "message": "string"
-  },
-  "language": "string",
-  "name": "string",
-  "timezone": "string",
-  "user_id": "string[uuid]"
-}`,
+								Name:    "UserInfoReply",
+								Payload: `{"email": "string[email]", "name": "string"}`,
 							},
 						},
 					},
@@ -143,20 +131,8 @@ func TestFormatSchema(t *testing.T) {
 						Channel: messageflow.Channel{
 							Name: "notification.analytics",
 							Message: messageflow.Message{
-								Name: "AnalyticsEvent",
-								Payload: `{
-  "event_id": "string[uuid]",
-  "event_type": "string[enum:notification_sent,notification_opened,notification_clicked]",
-  "metadata": {
-    "environment": "string[enum:development,staging,production]",
-    "platform": "string[enum:ios,android,web]",
-    "source": "string[enum:mobile,web,api]",
-    "version": "string"
-  },
-  "notification_id": "string[uuid]",
-  "timestamp": "string[date-time]",
-  "user_id": "string[uuid]"
-}`,
+								Name:    "AnalyticsEvent",
+								Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
 							},
 						},
 					},
@@ -284,4 +260,121 @@ func TestFormatSchemaChannelServicesWithOmitPayloads(t *testing.T) {
 	assert.Contains(t, actualOmittedStr, "notification.send")
 	assert.Contains(t, actualOmittedStr, "Notification Service")
 	assert.Contains(t, actualOmittedStr, "User Service")
+}
+
+func TestFormatSchemaServiceServices(t *testing.T) {
+	t.Parallel()
+
+	schema := messageflow.Schema{
+		Services: []messageflow.Service{
+			{
+				Name:        "Notification Service",
+				Description: "Handles notification operations",
+				Operation: []messageflow.Operation{
+					{
+						Action: messageflow.ActionReceive,
+						Channel: messageflow.Channel{
+							Name: "notification.preferences.get",
+							Message: messageflow.Message{
+								Name:    "PreferencesRequest",
+								Payload: `{"user_id": "string[uuid]"}`,
+							},
+						},
+						Reply: &messageflow.Channel{
+							Name: "notification.preferences.get",
+							Message: messageflow.Message{
+								Name:    "PreferencesReply",
+								Payload: `{"preferences": {"email_enabled": "boolean"}}`,
+							},
+						},
+					},
+					{
+						Action: messageflow.ActionSend,
+						Channel: messageflow.Channel{
+							Name: "user.info.request",
+							Message: messageflow.Message{
+								Name:    "UserInfoRequest",
+								Payload: `{"user_id": "string[uuid]"}`,
+							},
+						},
+						Reply: &messageflow.Channel{
+							Name: "user.info.request",
+							Message: messageflow.Message{
+								Name:    "UserInfoReply",
+								Payload: `{"email": "string[email]", "name": "string"}`,
+							},
+						},
+					},
+					{
+						Action: messageflow.ActionSend,
+						Channel: messageflow.Channel{
+							Name: "notification.analytics",
+							Message: messageflow.Message{
+								Name:    "AnalyticsEvent",
+								Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+							},
+						},
+					},
+				},
+			},
+			{
+				Name:        "User Service",
+				Description: "Manages user information",
+				Operation: []messageflow.Operation{
+					{
+						Action: messageflow.ActionReceive,
+						Channel: messageflow.Channel{
+							Name: "user.info.request",
+							Message: messageflow.Message{
+								Name:    "UserInfoRequest",
+								Payload: `{"user_id": "string[uuid]"}`,
+							},
+						},
+						Reply: &messageflow.Channel{
+							Name: "user.info.request",
+							Message: messageflow.Message{
+								Name:    "UserInfoReply",
+								Payload: `{"email": "string[email]", "name": "string"}`,
+							},
+						},
+					},
+				},
+			},
+			{
+				Name:        "Analytics Service",
+				Description: "Tracks analytics events",
+				Operation: []messageflow.Operation{
+					{
+						Action: messageflow.ActionReceive,
+						Channel: messageflow.Channel{
+							Name: "notification.analytics",
+							Message: messageflow.Message{
+								Name:    "AnalyticsEvent",
+								Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	ctx := context.Background()
+
+	target, err := NewTarget()
+	require.NoError(t, err)
+
+	actual, err := target.FormatSchema(ctx, schema, messageflow.FormatOptions{
+		Mode:    messageflow.FormatModeServiceServices,
+		Service: "Notification Service",
+	})
+	require.NoError(t, err)
+
+	actualStr := string(actual.Data)
+	assert.Contains(t, actualStr, "Notification Service")
+	assert.Contains(t, actualStr, "User Service")
+	assert.Contains(t, actualStr, "notification.preferences.get")
+	assert.Contains(t, actualStr, "user.info.request")
+	assert.Contains(t, actualStr, "notification.analytics")
+	assert.Contains(t, actualStr, "Analytics Service")
 }

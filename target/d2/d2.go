@@ -32,6 +32,9 @@ var (
 
 	//go:embed templates/context_services.tmpl
 	contextServicesTemplateFS embed.FS
+
+	//go:embed templates/service_services.tmpl
+	serviceServicesTemplateFS embed.FS
 )
 
 // Ensure Target implements messageflow interfaces.
@@ -44,6 +47,7 @@ type Target struct {
 	serviceChannelsTemplate *template.Template
 	channelServicesTemplate *template.Template
 	contextServicesTemplate *template.Template
+	serviceServicesTemplate *template.Template
 	renderOpts              *d2svg.RenderOpts
 	compileOpts             *d2lib.CompileOptions
 }
@@ -87,6 +91,11 @@ func NewTarget(opts ...TargetOpt) (*Target, error) {
 		return nil, fmt.Errorf("parsing context services template: %w", err)
 	}
 
+	serviceServicesTemplate, err := template.ParseFS(serviceServicesTemplateFS, "templates/service_services.tmpl")
+	if err != nil {
+		return nil, fmt.Errorf("parsing service services template: %w", err)
+	}
+
 	ruler, err := textmeasure.NewRuler()
 	if err != nil {
 		return nil, fmt.Errorf("creating ruler: %w", err)
@@ -100,6 +109,7 @@ func NewTarget(opts ...TargetOpt) (*Target, error) {
 		serviceChannelsTemplate: serviceChannelsTemplate,
 		channelServicesTemplate: channelServicesTemplate,
 		contextServicesTemplate: contextServicesTemplate,
+		serviceServicesTemplate: serviceServicesTemplate,
 		renderOpts: &d2svg.RenderOpts{
 			Pad: go2.Pointer(int64(5)),
 		},
@@ -138,6 +148,11 @@ type channelServicesPayload struct {
 type contextServicesPayload struct {
 	Services    []messageflow.Service
 	Connections []connection
+}
+
+type serviceServicesPayload struct {
+	MainService      messageflow.Service
+	NeighborServices []messageflow.Service
 }
 
 type connection struct {
@@ -180,11 +195,19 @@ func (t *Target) FormatSchema(
 		if err != nil {
 			return messageflow.FormattedSchema{}, fmt.Errorf("executing channel services template: %w", err)
 		}
+	case messageflow.FormatModeServiceServices:
+		payload := prepareServiceServicesPayload(s, opts.Service)
+
+		err := t.serviceServicesTemplate.Execute(&buf, payload)
+		if err != nil {
+			return messageflow.FormattedSchema{}, fmt.Errorf("executing service services template: %w", err)
+		}
 	default:
 		return messageflow.FormattedSchema{}, messageflow.NewUnsupportedFormatModeError(opts.Mode, []messageflow.FormatMode{
 			messageflow.FormatModeServiceChannels,
 			messageflow.FormatModeChannelServices,
 			messageflow.FormatModeContextServices,
+			messageflow.FormatModeServiceServices,
 		})
 	}
 
@@ -419,4 +442,50 @@ func findServiceByName(s messageflow.Schema, name string) messageflow.Service {
 		}
 	}
 	return messageflow.Service{}
+}
+
+func prepareServiceServicesPayload(s messageflow.Schema, serviceName string) serviceServicesPayload {
+	var mainService messageflow.Service
+	if serviceName == "" && len(s.Services) == 1 {
+		mainService = s.Services[0]
+	} else {
+		for _, service := range s.Services {
+			if service.Name == serviceName {
+				mainService = service
+				break
+			}
+		}
+	}
+
+	neighborServices := make([]messageflow.Service, 0)
+	neighborServiceMap := make(map[string]bool)
+
+	mainServiceChannels := make(map[string]bool)
+	for _, op := range mainService.Operation {
+		mainServiceChannels[op.Channel.Name] = true
+	}
+
+	for _, service := range s.Services {
+		if service.Name == mainService.Name {
+			continue
+		}
+
+		hasCommonChannel := false
+		for _, op := range service.Operation {
+			if mainServiceChannels[op.Channel.Name] {
+				hasCommonChannel = true
+				break
+			}
+		}
+
+		if hasCommonChannel && !neighborServiceMap[service.Name] {
+			neighborServices = append(neighborServices, service)
+			neighborServiceMap[service.Name] = true
+		}
+	}
+
+	return serviceServicesPayload{
+		MainService:      mainService,
+		NeighborServices: neighborServices,
+	}
 }

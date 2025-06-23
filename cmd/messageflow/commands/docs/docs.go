@@ -154,9 +154,9 @@ func (c *Command) generateDocumentation(
 
 	serviceDiagrams := make(map[string][]byte)
 	for _, service := range schema.Services {
-		diagram, err := c.generateServiceChannelsDiagram(ctx, schema, target, service.Name)
+		diagram, err := c.generateServiceServicesDiagram(ctx, schema, target, service.Name)
 		if err != nil {
-			return fmt.Errorf("error generating service channels diagram for %s: %w", service.Name, err)
+			return fmt.Errorf("error generating service services diagram for %s: %w", service.Name, err)
 		}
 		serviceDiagrams[service.Name] = diagram
 	}
@@ -210,25 +210,25 @@ func (c *Command) generateContextDiagram(
 	return diagram, nil
 }
 
-func (c *Command) generateServiceChannelsDiagram(
+func (c *Command) generateServiceServicesDiagram(
 	ctx context.Context,
 	schema messageflow.Schema,
 	target messageflow.Target,
 	serviceName string,
 ) ([]byte, error) {
 	formatOpts := messageflow.FormatOptions{
-		Mode:    messageflow.FormatModeServiceChannels,
+		Mode:    messageflow.FormatModeServiceServices,
 		Service: serviceName,
 	}
 
 	formattedSchema, err := target.FormatSchema(ctx, schema, formatOpts)
 	if err != nil {
-		return nil, fmt.Errorf("error formatting service channels schema: %w", err)
+		return nil, fmt.Errorf("error formatting service services schema: %w", err)
 	}
 
 	diagram, err := target.RenderSchema(ctx, formattedSchema)
 	if err != nil {
-		return nil, fmt.Errorf("error rendering service channels diagram: %w", err)
+		return nil, fmt.Errorf("error rendering service services diagram: %w", err)
 	}
 
 	return diagram, nil

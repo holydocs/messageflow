@@ -21,6 +21,7 @@ const (
 	FormatModeContextServices = FormatMode("context_services")
 	FormatModeServiceChannels = FormatMode("service_channels")
 	FormatModeChannelServices = FormatMode("channel_services")
+	FormatModeServiceServices = FormatMode("service_services")
 )
 
 type FormatOptions struct {

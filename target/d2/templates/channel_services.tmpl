@@ -83,7 +83,7 @@ senders -> '{{.Channel}}'
 
 {{- if .Receivers }}
 {{- if .ReplyMessage }}
-'{{.Channel}}' -> repliers
+'{{.Channel}}' <- repliers
 {{- else }}
 '{{.Channel}}' -> receivers
 {{- end }}

@@ -107,7 +107,7 @@ Reply({{.Reply.Message.Name}}):
 '{{.Name}}' -> 'Send To'
 {{- end }}
 {{- if $hasReplyTo }}
-'Reply To' -> '{{.Name}}'
+'Reply To' <- '{{.Name}}'
 {{- end }}
 {{- if $hasRequestFrom }}
 '{{.Name}}' -> 'Request From'

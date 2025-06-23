@@ -1,0 +1,85 @@
+{{- $mainService := .MainService -}}
+{{- $neighborServices := .NeighborServices -}}
+
+{{- range $mainService.Operation }}
+'{{.Channel.Name}}': { 
+  shape: queue
+  tooltip: ||json
+{{- if .Reply }}
+Request({{.Channel.Message.Name}}):
+{{.Channel.Message.Payload}}
+Reply({{.Reply.Message.Name}}):
+{{.Reply.Message.Payload}}
+{{- else }}
+Message({{.Channel.Message.Name}}):
+{{.Channel.Message.Payload}}
+{{- end }}
+||
+}
+
+{{end}}
+
+'{{$mainService.Name}}': {
+  shape: rectangle
+  style: {
+    fill: "#e1f5fe"
+    stroke: "#01579b"
+    stroke-width: 2
+  }
+  tooltip: ||
+{{$mainService.Description}}
+||
+}
+
+{{- range $neighborServices }}
+'{{.Name}}': {
+  shape: rectangle
+  style: {
+    fill: "#f3e5f5"
+    stroke: "#4a148c"
+    stroke-width: 1
+  }
+  tooltip: ||
+{{.Description}}
+||
+}
+
+{{end}}
+
+{{- range $mainService.Operation }}
+  {{- if eq .Action "receive" }}
+    {{- if .Reply }}
+'{{.Channel.Name}}' <- '{{$mainService.Name}}': Reply
+    {{- else }}
+'{{.Channel.Name}}' -> '{{$mainService.Name}}': Receive
+    {{- end }}
+  {{- end }}
+  {{- if eq .Action "send" }}
+    {{- if .Reply }}
+'{{$mainService.Name}}' -> '{{.Channel.Name}}': Request
+    {{- else }}
+'{{$mainService.Name}}' -> '{{.Channel.Name}}': Send
+    {{- end }}
+  {{- end }}
+{{- end }}
+
+{{- range $neighborServices }}
+{{- $neighborService := . -}}
+{{- range .Operation }}
+  {{- $neighborOp := . -}}
+  {{- if eq .Action "send" }}
+    {{- range $mainService.Operation }}
+      {{- if and (eq .Action "receive") (eq .Channel.Name $neighborOp.Channel.Name) }}
+'{{$neighborService.Name}}' -> '{{$neighborOp.Channel.Name}}'
+      {{- end }}
+    {{- end }}
+  {{- end }}
+  {{- if eq .Action "receive" }}
+    {{- range $mainService.Operation }}
+      {{- if and (eq .Action "send") (eq .Channel.Name $neighborOp.Channel.Name) }}
+'{{$neighborOp.Channel.Name}}' -> '{{$neighborService.Name}}'
+      {{- end }}
+    {{- end }}
+  {{- end }}
+{{- end }}
+{{- end }} 
