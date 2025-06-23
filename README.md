@@ -10,12 +10,11 @@ Example of visualizing a Notification service using [this](source/asyncapi/testd
 
 ![schema](target/d2/testdata/service_channels_notification.svg)
 
-When you have AsyncAPI specifications for all services in your system, MessageFlow can generate comprehensive documentation showing the complete service ecosystem. See [examples/docs](examples/docs) for a complete multi-service documentation example.
+When you have AsyncAPI specifications for all services in your system, MessageFlow can generate comprehensive documentation showing the complete service ecosystem. See [examples/docs](examples/docs) for a complete multi-service documentation example. For instance, in the generated documentation, the same service now appears like this:
 
+![schema](examples/docs/diagrams/service_notification-service.svg)
 
 ## Usage
-
-### CLI
 
 MessageFlow provides a command-line interface.
 
@@ -23,7 +22,7 @@ MessageFlow provides a command-line interface.
 go install github.com/denchenko/messageflow/cmd/messageflow@latest
 ```
 
-#### Generate Schema
+### Generate Schema
 
 The `gen-schema` command processes AsyncAPI files and generates formatted schemas or rendered diagrams:
 
@@ -38,7 +37,7 @@ messageflow gen-schema --format-to-file schema.d2 --asyncapi-files asyncapi.yaml
 messageflow gen-schema --render-to-file combined.svg --asyncapi-files "file1.yaml,file2.yaml,file3.yaml"
 ```
 
-#### Generate Documentation
+### Generate Documentation
 
 The `gen-docs` command generates comprehensive markdown documentation from AsyncAPI files, including diagrams and changelog tracking:
 
@@ -53,67 +52,3 @@ The generated documentation includes:
 - **Channel diagrams**: Detailed views of message flows through specific channels
 - **Changelog tracking**: Automatic detection and documentation of schema changes between runs
 - **Message payloads**: JSON schemas for all message types
-
-### As a Library
-
-Here's a complete example of using MessageFlow as a library:
-
-```go
-package main
-
-import (
-	"context"
-	"fmt"
-	"os"
-
-	"github.com/denchenko/messageflow/source/asyncapi"
-	"github.com/denchenko/messageflow/target/d2"
-)
-
-func main() {
-	ctx := context.Background()
-
-	// Create an AsyncAPI source
-	asyncSource, err := asyncapi.NewSource("asyncapi.yaml")
-	if err != nil {
-		fmt.Printf("Failed to create asyncapi source: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Extract the schema
-	schema, err := asyncSource.ExtractSchema(ctx)
-	if err != nil {
-		fmt.Printf("Failed to extract schema: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Create a D2 target for diagram generation
-	d2Target, err := d2.NewTarget()
-	if err != nil {
-		fmt.Printf("Failed to create d2 target: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Format the schema
-	formatted, err := d2Target.FormatSchema(ctx, schema)
-	if err != nil {
-		fmt.Printf("Failed to format schema: %v\n", err)
-		os.Exit(1)
-	}
-
-	// Render the formatted schema
-	res, err := d2Target.RenderSchema(ctx, formatted)
-	if err != nil {
-		fmt.Printf("Failed to render schema: %v\n", err)
-		os.Exit(1)
-	}
-
-	err = os.WriteFile("schema.svg", res, 0644)
-	if err != nil {
-		fmt.Printf("Failed to write schema: %v\n", err)
-		os.Exit(1)
-	}
-
-	fmt.Println("Diagram generated successfully!")
-}
-```
