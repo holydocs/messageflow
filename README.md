@@ -38,6 +38,22 @@ messageflow gen-schema --format-to-file schema.d2 --asyncapi-files asyncapi.yaml
 messageflow gen-schema --render-to-file combined.svg --asyncapi-files "file1.yaml,file2.yaml,file3.yaml"
 ```
 
+#### Generate Documentation
+
+The `gen-docs` command generates comprehensive markdown documentation from AsyncAPI files, including diagrams and changelog tracking:
+
+```bash
+# Generate documentation for multiple services
+messageflow gen-docs --asyncapi-files "service1.yaml,service2.yaml,service3.yaml" --output ./docs
+```
+
+The generated documentation includes:
+- **Context diagram**: Overview of all services and their interactions
+- **Service diagrams**: Individual diagrams showing each service's channels and operations
+- **Channel diagrams**: Detailed views of message flows through specific channels
+- **Changelog tracking**: Automatic detection and documentation of schema changes between runs
+- **Message payloads**: JSON schemas for all message types
+
 ### As a Library
 
 Here's a complete example of using MessageFlow as a library:
