@@ -39,6 +39,28 @@
 
 ![{{.}} Channel Services](diagrams/channel_{{Anchor .}}.svg)
 
+{{- $channelInfo := index $.ChannelInfo . }}
+{{- if $channelInfo.Messages }}
+
+#### Messages
+
+{{- range $channelInfo.Messages }}
+
+{{- if or (eq .Direction "request") (eq .Direction "reply") }}
+**{{.Direction}}**: {{.Name}}
+{{- else }}
+**{{.Name}}**
+{{- end }}
+
+{{- if .Payload }}
+```json
+{{.Payload}}
+```
+{{- end }}
+
+{{- end }}
+{{- end }}
+
 {{- end }}
 
 {{- if .Changelogs }}
@@ -65,4 +87,3 @@
 {{- end }}
 
 {{- end }}
-

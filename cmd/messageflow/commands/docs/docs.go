@@ -241,8 +241,9 @@ func (c *Command) generateChannelServicesDiagram(
 	channel string,
 ) ([]byte, error) {
 	formatOpts := messageflow.FormatOptions{
-		Mode:    messageflow.FormatModeChannelServices,
-		Channel: channel,
+		Mode:         messageflow.FormatModeChannelServices,
+		Channel:      channel,
+		OmitPayloads: true,
 	}
 
 	formattedSchema, err := target.FormatSchema(ctx, schema, formatOpts)
@@ -300,21 +301,24 @@ func (c *Command) createREADMEContent(schema messageflow.Schema, title string, c
 	}
 
 	channels := c.extractUniqueChannels(schema)
+	channelInfo := c.extractChannelInfo(schema)
 
 	sort.Slice(schema.Services, func(i, j int) bool {
 		return schema.Services[i].Name < schema.Services[j].Name
 	})
 
 	data := struct {
-		Title      string
-		Services   []messageflow.Service
-		Channels   []string
-		Changelogs []messageflow.Changelog
+		Title       string
+		Services    []messageflow.Service
+		Channels    []string
+		ChannelInfo map[string]ChannelInfo
+		Changelogs  []messageflow.Changelog
 	}{
-		Title:      title,
-		Services:   schema.Services,
-		Channels:   channels,
-		Changelogs: changelogs,
+		Title:       title,
+		Services:    schema.Services,
+		Channels:    channels,
+		ChannelInfo: channelInfo,
+		Changelogs:  changelogs,
 	}
 
 	var buf strings.Builder
@@ -323,6 +327,112 @@ func (c *Command) createREADMEContent(schema messageflow.Schema, title string, c
 	}
 
 	return buf.String(), nil
+}
+
+// ChannelInfo represents information about a channel including its messages and payloads
+type ChannelInfo struct {
+	Messages []ChannelMessage
+}
+
+// ChannelMessage represents a message in a channel with its payload and direction
+type ChannelMessage struct {
+	Name      string
+	Payload   string
+	Direction string // "send" or "receive"
+	Service   string
+}
+
+func (c *Command) extractChannelInfo(schema messageflow.Schema) map[string]ChannelInfo {
+	channelInfo := make(map[string]ChannelInfo)
+
+	channelOperations := make(map[string][]struct {
+		service   string
+		operation messageflow.Operation
+	})
+
+	for _, service := range schema.Services {
+		for _, operation := range service.Operation {
+			channelName := operation.Channel.Name
+			channelOperations[channelName] = append(channelOperations[channelName], struct {
+				service   string
+				operation messageflow.Operation
+			}{
+				service:   service.Name,
+				operation: operation,
+			})
+		}
+	}
+
+	// Select the most relevant message for each channel
+	for channelName, operations := range channelOperations {
+		info := ChannelInfo{
+			Messages: []ChannelMessage{},
+		}
+
+		// Check if this is a req/reply pattern
+		hasReply := false
+		for _, op := range operations {
+			if op.operation.Reply != nil {
+				hasReply = true
+				break
+			}
+		}
+
+		if hasReply {
+			// For req/reply pattern: include both request and reply messages
+			for _, op := range operations {
+				if op.operation.Reply != nil {
+					info.Messages = append(info.Messages, ChannelMessage{
+						Name:      op.operation.Channel.Message.Name,
+						Payload:   op.operation.Channel.Message.Payload,
+						Direction: "request",
+						Service:   op.service,
+					})
+					info.Messages = append(info.Messages, ChannelMessage{
+						Name:      op.operation.Reply.Message.Name,
+						Payload:   op.operation.Reply.Message.Payload,
+						Direction: "reply",
+						Service:   op.service,
+					})
+					break
+				}
+			}
+		} else {
+			// For send/receive pattern: prefer the receive message
+			receiveFound := false
+			for _, op := range operations {
+				if op.operation.Action == messageflow.ActionReceive {
+					info.Messages = append(info.Messages, ChannelMessage{
+						Name:      op.operation.Channel.Message.Name,
+						Payload:   op.operation.Channel.Message.Payload,
+						Direction: "receive",
+						Service:   op.service,
+					})
+					receiveFound = true
+					break
+				}
+			}
+
+			// If no receive operation found, use the send message
+			if !receiveFound {
+				for _, op := range operations {
+					if op.operation.Action == messageflow.ActionSend {
+						info.Messages = append(info.Messages, ChannelMessage{
+							Name:      op.operation.Channel.Message.Name,
+							Payload:   op.operation.Channel.Message.Payload,
+							Direction: "send",
+							Service:   op.service,
+						})
+						break
+					}
+				}
+			}
+		}
+
+		channelInfo[channelName] = info
+	}
+
+	return channelInfo
 }
 
 func (c *Command) writeDiagramFiles(outputDir string, contextDiagram []byte, serviceDiagrams, channelDiagrams map[string][]byte) error {
