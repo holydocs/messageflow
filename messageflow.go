@@ -94,7 +94,7 @@ const (
 // Change represents a single change in the schema.
 type Change struct {
 	Type      ChangeType `json:"type"`
-	Category  string     `json:"category"` // "service", "channel", "message"
+	Category  string     `json:"category"`
 	Name      string     `json:"name"`
 	Details   string     `json:"details,omitempty"`
 	Diff      string     `json:"diff,omitempty"`
@@ -200,7 +200,7 @@ func CompareSchemas(oldSchema, newSchema Schema) Changelog {
 				Type:      ChangeTypeAdded,
 				Category:  "service",
 				Name:      name,
-				Details:   fmt.Sprintf("Service '%s' was added", newService.Name),
+				Details:   fmt.Sprintf("'%s' was added", newService.Name),
 				Timestamp: now,
 			})
 		}
@@ -212,7 +212,7 @@ func CompareSchemas(oldSchema, newSchema Schema) Changelog {
 				Type:      ChangeTypeRemoved,
 				Category:  "service",
 				Name:      name,
-				Details:   fmt.Sprintf("Service '%s' was removed", name),
+				Details:   fmt.Sprintf("'%s' was removed", name),
 				Timestamp: now,
 			})
 		} else {
@@ -248,10 +248,10 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 		if _, exists := oldOps[key]; !exists {
 			changes = append(changes, Change{
 				Type:     ChangeTypeAdded,
-				Category: "operation",
+				Category: "channel",
 				Name:     fmt.Sprintf("%s:%s", newService.Name, key),
 				Details: fmt.Sprintf(
-					"Operation '%s' on channel '%s' was added to service '%s'",
+					"'%s' on channel '%s' was added to service '%s'",
 					newOp.Action, newOp.Channel.Name, newService.Name,
 				),
 				Timestamp: timestamp,
@@ -263,10 +263,10 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 		if _, exists := newOps[key]; !exists {
 			changes = append(changes, Change{
 				Type:     ChangeTypeRemoved,
-				Category: "operation",
+				Category: "channel",
 				Name:     fmt.Sprintf("%s:%s", oldService.Name, key),
 				Details: fmt.Sprintf(
-					"Operation '%s' on channel '%s' was removed from service '%s'",
+					"'%s' on channel '%s' was removed from service '%s'",
 					oldOp.Action, oldOp.Channel.Name, oldService.Name,
 				),
 				Timestamp: timestamp,
@@ -314,7 +314,7 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 			} else if oldOp.Reply != nil && newOp.Reply == nil {
 				changes = append(changes, Change{
 					Type:     ChangeTypeRemoved,
-					Category: "operation",
+					Category: "channel",
 					Name:     fmt.Sprintf("%s:%s:reply", newService.Name, key),
 					Details: fmt.Sprintf(
 						"Reply channel removed for operation '%s' on channel '%s' in service '%s'",
@@ -325,7 +325,7 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 			} else if oldOp.Reply == nil && newOp.Reply != nil {
 				changes = append(changes, Change{
 					Type:     ChangeTypeAdded,
-					Category: "operation",
+					Category: "channel",
 					Name:     fmt.Sprintf("%s:%s:reply", newService.Name, key),
 					Details: fmt.Sprintf(
 						"Reply channel added for operation '%s' on channel '%s' in service '%s'",
