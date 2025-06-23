@@ -5,7 +5,6 @@ import (
 	"embed"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
 	"log"
 	"os"
 	"path/filepath"
@@ -21,6 +20,11 @@ import (
 
 //go:embed templates/readme.tmpl
 var readmeTemplateFS embed.FS
+
+type Metadata struct {
+	Schema     messageflow.Schema      `json:"schema"`
+	Changelogs []messageflow.Changelog `json:"changelogs"`
+}
 
 type Command struct {
 	cmd *cobra.Command
@@ -117,34 +121,33 @@ func (c *Command) generateDocumentation(
 	target messageflow.Target,
 	title, outputDir string,
 ) error {
-	existingSchema, err := c.readExistingSchema(outputDir)
+	existingMetadata, err := c.readMetadata(outputDir)
 	if err != nil {
-		return fmt.Errorf("error reading existing schema: %w", err)
-	}
-
-	existingChangelogs, err := c.readExistingChangelogs(outputDir)
-	if err != nil {
-		return fmt.Errorf("error reading existing changelogs: %w", err)
+		return fmt.Errorf("error reading existing messageflow data: %w", err)
 	}
 
 	var newChangelog *messageflow.Changelog
-	if existingSchema != nil {
-		changelog := messageflow.CompareSchemas(*existingSchema, schema)
+	var existingChangelogs []messageflow.Changelog
+
+	if existingMetadata != nil {
+		changelog := messageflow.CompareSchemas(existingMetadata.Schema, schema)
 		if len(changelog.Changes) > 0 {
 			newChangelog = &changelog
 		}
+		existingChangelogs = existingMetadata.Changelogs
+	}
+
+	metadata := Metadata{
+		Schema:     schema,
+		Changelogs: existingChangelogs,
 	}
 
 	if newChangelog != nil {
-		existingChangelogs = append(existingChangelogs, *newChangelog)
+		metadata.Changelogs = append(metadata.Changelogs, *newChangelog)
 	}
 
-	if err := c.writeSchema(outputDir, schema); err != nil {
-		return fmt.Errorf("error writing schema: %w", err)
-	}
-
-	if err := c.writeChangelogs(outputDir, existingChangelogs); err != nil {
-		return fmt.Errorf("error writing changelogs: %w", err)
+	if err := c.writeMetadata(outputDir, metadata); err != nil {
+		return fmt.Errorf("error writing messageflow data: %w", err)
 	}
 
 	contextDiagram, err := c.generateContextDiagram(ctx, schema, target)
@@ -175,7 +178,7 @@ func (c *Command) generateDocumentation(
 		return fmt.Errorf("error writing diagram files: %w", err)
 	}
 
-	readmeContent, err := c.createREADMEContent(schema, title, existingChangelogs)
+	readmeContent, err := c.createREADMEContent(schema, title, metadata.Changelogs)
 	if err != nil {
 		return fmt.Errorf("error creating README content: %w", err)
 	}
@@ -480,71 +483,36 @@ func sanitizeAnchor(name string) string {
 	return anchor
 }
 
-func (c *Command) readExistingChangelogs(outputDir string) ([]messageflow.Changelog, error) {
-	changelogPath := filepath.Join(outputDir, "changelog.json")
+func (c *Command) readMetadata(outputDir string) (*Metadata, error) {
+	dataPath := filepath.Join(outputDir, "messageflow.json")
 
-	if _, err := os.Stat(changelogPath); os.IsNotExist(err) {
-		return []messageflow.Changelog{}, nil
-	}
-
-	data, err := ioutil.ReadFile(changelogPath)
-	if err != nil {
-		return nil, fmt.Errorf("error reading changelog file: %w", err)
-	}
-
-	var changelogs []messageflow.Changelog
-	if err := json.Unmarshal(data, &changelogs); err != nil {
-		return nil, fmt.Errorf("error unmarshaling changelog data: %w", err)
-	}
-
-	return changelogs, nil
-}
-
-func (c *Command) writeChangelogs(outputDir string, changelogs []messageflow.Changelog) error {
-	changelogPath := filepath.Join(outputDir, "changelog.json")
-
-	data, err := json.MarshalIndent(changelogs, "", "  ")
-	if err != nil {
-		return fmt.Errorf("error marshaling changelog data: %w", err)
-	}
-
-	if err := ioutil.WriteFile(changelogPath, data, 0644); err != nil {
-		return fmt.Errorf("error writing changelog file: %w", err)
-	}
-
-	return nil
-}
-
-func (c *Command) readExistingSchema(outputDir string) (*messageflow.Schema, error) {
-	schemaPath := filepath.Join(outputDir, "schema.json")
-
-	if _, err := os.Stat(schemaPath); os.IsNotExist(err) {
+	if _, err := os.Stat(dataPath); os.IsNotExist(err) {
 		return nil, nil
 	}
 
-	data, err := ioutil.ReadFile(schemaPath)
+	fileData, err := os.ReadFile(dataPath)
 	if err != nil {
-		return nil, fmt.Errorf("error reading schema file: %w", err)
+		return nil, fmt.Errorf("error reading messageflow data file: %w", err)
 	}
 
-	var schema messageflow.Schema
-	if err := json.Unmarshal(data, &schema); err != nil {
-		return nil, fmt.Errorf("error unmarshaling schema data: %w", err)
+	var messageFlowData Metadata
+	if err := json.Unmarshal(fileData, &messageFlowData); err != nil {
+		return nil, fmt.Errorf("error unmarshaling messageflow data: %w", err)
 	}
 
-	return &schema, nil
+	return &messageFlowData, nil
 }
 
-func (c *Command) writeSchema(outputDir string, schema messageflow.Schema) error {
-	schemaPath := filepath.Join(outputDir, "schema.json")
+func (c *Command) writeMetadata(outputDir string, data Metadata) error {
+	dataPath := filepath.Join(outputDir, "messageflow.json")
 
-	data, err := json.MarshalIndent(schema, "", "  ")
+	jsonData, err := json.MarshalIndent(data, "", "  ")
 	if err != nil {
-		return fmt.Errorf("error marshaling schema data: %w", err)
+		return fmt.Errorf("error marshaling messageflow data: %w", err)
 	}
 
-	if err := ioutil.WriteFile(schemaPath, data, 0644); err != nil {
-		return fmt.Errorf("error writing schema file: %w", err)
+	if err := os.WriteFile(dataPath, jsonData, 0644); err != nil {
+		return fmt.Errorf("error writing messageflow data file: %w", err)
 	}
 
 	return nil
