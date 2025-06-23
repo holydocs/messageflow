@@ -1,0 +1,25 @@
+
+'Notification Service': |md
+# Notification Service
+
+|
+'Notification Service'.shape: rectangle
+'User Service': |md
+# User Service
+
+|
+'User Service'.shape: rectangle
+'Analytics Service': |md
+# Analytics Service
+
+|
+'Analytics Service'.shape: rectangle
+'Notification Service' -> 'Analytics Service': {
+  label: "Pub"
+}
+'Notification Service' -> 'User Service': {
+  label: "Req"
+}
+'User Service' -> 'Analytics Service': {
+  label: "Pub"
+} 

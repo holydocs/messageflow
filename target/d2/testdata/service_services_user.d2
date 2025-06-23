@@ -1,0 +1,63 @@
+
+'user.info.request': { 
+  shape: queue
+  tooltip: ||json
+Request(UserInfoRequest):
+{"user_id": "string[uuid]"}
+Reply(UserInfoReply):
+{"email": "string[email]", "name": "string"}
+||
+}
+
+
+'user.created': { 
+  shape: queue
+  tooltip: ||json
+Message(UserCreated):
+{"user_id": "string[uuid]", "email": "string[email]"}
+||
+}
+
+
+
+'User Service': {
+  shape: rectangle
+  style: {
+    fill: "#e1f5fe"
+    stroke: "#01579b"
+    stroke-width: 2
+  }
+  tooltip: ||
+
+||
+}
+'Notification Service': {
+  shape: rectangle
+  style: {
+    fill: "#f3e5f5"
+    stroke: "#4a148c"
+    stroke-width: 1
+  }
+  tooltip: ||
+
+||
+}
+
+
+'Analytics Service': {
+  shape: rectangle
+  style: {
+    fill: "#f3e5f5"
+    stroke: "#4a148c"
+    stroke-width: 1
+  }
+  tooltip: ||
+
+||
+}
+
+
+'user.info.request' <- 'User Service': Reply
+'User Service' -> 'user.created': Send
+'Notification Service' -> 'user.info.request'
+'user.created' -> 'Analytics Service' 

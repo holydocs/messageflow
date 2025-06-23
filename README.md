@@ -8,7 +8,7 @@ MessageFlow is a Go library and CLI tool for visualizing AsyncAPI specifications
 
 Example of visualizing a Notification service using [this](source/asyncapi/testdata/notification.yaml) AsyncAPI specification. Message payloads are displayed as thumbnails when hovering over specific queues. This approach was chosen to keep the schema clean and uncluttered.
 
-![schema](target/d2/testdata/schema.svg)
+![schema](target/d2/testdata/service_channels_notification.svg)
 
 ## Usage
 
