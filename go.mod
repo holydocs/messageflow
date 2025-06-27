@@ -7,6 +7,7 @@ require (
 	github.com/lerenn/asyncapi-codegen v0.46.2
 	github.com/spf13/cobra v1.9.1
 	github.com/stretchr/testify v1.10.0
+	golang.org/x/sync v0.15.0
 	oss.terrastruct.com/d2 v0.7.0
 	oss.terrastruct.com/util-go v0.0.0-20250213174338-243d8661088a
 )

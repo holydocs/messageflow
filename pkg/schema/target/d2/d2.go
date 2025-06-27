@@ -49,7 +49,6 @@ type Target struct {
 	contextServicesTemplate *template.Template
 	serviceServicesTemplate *template.Template
 	renderOpts              *d2svg.RenderOpts
-	compileOpts             *d2lib.CompileOptions
 }
 
 // TargetOpt is a function type that allows customization of a Target instance.
@@ -60,14 +59,6 @@ type TargetOpt func(*Target)
 func WithRenderOpts(renderOpts *d2svg.RenderOpts) TargetOpt {
 	return func(t *Target) {
 		t.renderOpts = renderOpts
-	}
-}
-
-// WithCompileOpts returns a TargetOpt that sets the compilation options for the D2 diagram.
-// These options control the layout and measurement aspects of the diagram generation.
-func WithCompileOpts(compileOpts *d2lib.CompileOptions) TargetOpt {
-	return func(t *Target) {
-		t.compileOpts = compileOpts
 	}
 }
 
@@ -96,15 +87,6 @@ func NewTarget(opts ...TargetOpt) (*Target, error) {
 		return nil, fmt.Errorf("parsing service services template: %w", err)
 	}
 
-	ruler, err := textmeasure.NewRuler()
-	if err != nil {
-		return nil, fmt.Errorf("creating ruler: %w", err)
-	}
-
-	layoutResolver := func(_ string) (d2graph.LayoutGraph, error) {
-		return d2elklayout.DefaultLayout, nil
-	}
-
 	t := &Target{
 		serviceChannelsTemplate: serviceChannelsTemplate,
 		channelServicesTemplate: channelServicesTemplate,
@@ -112,10 +94,6 @@ func NewTarget(opts ...TargetOpt) (*Target, error) {
 		serviceServicesTemplate: serviceServicesTemplate,
 		renderOpts: &d2svg.RenderOpts{
 			Pad: go2.Pointer(int64(5)),
-		},
-		compileOpts: &d2lib.CompileOptions{
-			LayoutResolver: layoutResolver,
-			Ruler:          ruler,
 		},
 	}
 
@@ -224,7 +202,22 @@ func (t *Target) RenderSchema(ctx context.Context, s messageflow.FormattedSchema
 
 	ctx = log.WithDefault(ctx)
 
-	diagram, _, err := d2lib.Compile(ctx, string(s.Data), t.compileOpts, t.renderOpts)
+	// Create a new Ruler for each call since it's not thread-safe
+	ruler, err := textmeasure.NewRuler()
+	if err != nil {
+		return nil, fmt.Errorf("creating ruler: %w", err)
+	}
+
+	layoutResolver := func(_ string) (d2graph.LayoutGraph, error) {
+		return d2elklayout.DefaultLayout, nil
+	}
+
+	compileOpts := &d2lib.CompileOptions{
+		LayoutResolver: layoutResolver,
+		Ruler:          ruler,
+	}
+
+	diagram, _, err := d2lib.Compile(ctx, string(s.Data), compileOpts, t.renderOpts)
 	if err != nil {
 		return nil, fmt.Errorf("compiling diagram: %w", err)
 	}

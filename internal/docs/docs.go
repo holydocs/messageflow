@@ -12,6 +12,7 @@ import (
 	"text/template"
 
 	"github.com/denchenko/messageflow"
+	"golang.org/x/sync/errgroup"
 )
 
 //go:embed templates/readme.tmpl
@@ -91,21 +92,27 @@ func generateDiagrams(
 		return fmt.Errorf("error creating diagrams directory: %w", err)
 	}
 
-	if err := generateContextDiagram(ctx, schema, target, outputDir); err != nil {
-		return fmt.Errorf("error generating context diagram: %w", err)
-	}
+	channels := extractUniqueChannels(schema)
+
+	g, ctx := errgroup.WithContext(ctx)
+	g.Go(func() error {
+		return generateContextDiagram(ctx, schema, target, outputDir)
+	})
 
 	for _, service := range schema.Services {
-		if err := generateServiceServicesDiagram(ctx, schema, target, service.Name, outputDir); err != nil {
-			return fmt.Errorf("error generating service services diagram for %s: %w", service.Name, err)
-		}
+		g.Go(func() error {
+			return generateServiceServicesDiagram(ctx, schema, target, service.Name, outputDir)
+		})
 	}
 
-	channels := extractUniqueChannels(schema)
 	for _, channel := range channels {
-		if err := generateChannelServicesDiagram(ctx, schema, target, channel, outputDir); err != nil {
-			return fmt.Errorf("error generating channel services diagram for %s: %w", channel, err)
-		}
+		g.Go(func() error {
+			return generateChannelServicesDiagram(ctx, schema, target, channel, outputDir)
+		})
+	}
+
+	if err := g.Wait(); err != nil {
+		return fmt.Errorf("error generating diagrams: %w", err)
 	}
 
 	return nil
