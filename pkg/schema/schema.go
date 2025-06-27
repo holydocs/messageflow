@@ -28,5 +28,8 @@ func Load(ctx context.Context, paths []string) (messageflow.Schema, error) {
 		schemas = append(schemas, schema)
 	}
 
-	return messageflow.MergeSchemas(schemas...), nil
+	mergedSchema := messageflow.MergeSchemas(schemas...)
+	mergedSchema.Sort()
+
+	return mergedSchema, nil
 }

@@ -6,6 +6,7 @@ package messageflow
 import (
 	"context"
 	"fmt"
+	"sort"
 	"time"
 
 	"github.com/google/go-cmp/cmp"
@@ -34,6 +35,30 @@ type FormatOptions struct {
 // Schema defines the structure of a message flow schema containing services and their operations.
 type Schema struct {
 	Services []Service `json:"services"`
+}
+
+// Sort sorts the services and their operations in a consistent order.
+func (s *Schema) Sort() {
+	for i := range s.Services {
+		sort.Slice(s.Services[i].Operation, func(j, k int) bool {
+			op1 := s.Services[i].Operation[j]
+			op2 := s.Services[i].Operation[k]
+
+			if op1.Action != op2.Action {
+				return op1.Action < op2.Action
+			}
+
+			if op1.Channel.Name != op2.Channel.Name {
+				return op1.Channel.Name < op2.Channel.Name
+			}
+
+			return op1.Channel.Message.Name < op2.Channel.Message.Name
+		})
+	}
+
+	sort.Slice(s.Services, func(i, j int) bool {
+		return s.Services[i].Name < s.Services[j].Name
+	})
 }
 
 // Service represents a service in the message flow with its name and operations.
