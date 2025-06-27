@@ -88,6 +88,7 @@ func generateDiagrams(
 	if err := os.RemoveAll(diagramsDir); err != nil {
 		return fmt.Errorf("error removing old diagrams directory: %w", err)
 	}
+
 	if err := os.MkdirAll(diagramsDir, 0755); err != nil {
 		return fmt.Errorf("error creating diagrams directory: %w", err)
 	}
@@ -138,7 +139,6 @@ func generateContextDiagram(
 		return fmt.Errorf("error rendering context diagram: %w", err)
 	}
 
-	// Write the diagram file immediately
 	contextPath := filepath.Join(outputDir, "diagrams", "context.svg")
 	if err := os.WriteFile(contextPath, diagram, 0644); err != nil {
 		return fmt.Errorf("error writing context diagram: %w", err)
@@ -169,7 +169,6 @@ func generateServiceServicesDiagram(
 		return fmt.Errorf("error rendering service services diagram: %w", err)
 	}
 
-	// Write the diagram file immediately
 	serviceAnchor := sanitizeAnchor(serviceName)
 	servicePath := filepath.Join(outputDir, "diagrams", fmt.Sprintf("service_%s.svg", serviceAnchor))
 	if err := os.WriteFile(servicePath, diagram, 0644); err != nil {
@@ -202,7 +201,6 @@ func generateChannelServicesDiagram(
 		return fmt.Errorf("error rendering channel services diagram: %w", err)
 	}
 
-	// Write the diagram file immediately
 	channelAnchor := sanitizeAnchor(channel)
 	channelPath := filepath.Join(outputDir, "diagrams", fmt.Sprintf("channel_%s.svg", channelAnchor))
 	if err := os.WriteFile(channelPath, diagram, 0644); err != nil {

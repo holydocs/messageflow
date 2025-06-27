@@ -13,7 +13,8 @@ func main() {
 	rootCmd := &cobra.Command{
 		Use:   "messageflow",
 		Short: "MessageFlow - AsyncAPI schema processing tool",
-		Long:  `MessageFlow is a tool for generating schemas/docs from AsyncAPI schemas.`}
+		Long:  `MessageFlow is a tool for generating schemas/docs from AsyncAPI schemas.`,
+	}
 
 	rootCmd.AddCommand(schema.NewCommand().GetCommand())
 	rootCmd.AddCommand(docs.NewCommand().GetCommand())
