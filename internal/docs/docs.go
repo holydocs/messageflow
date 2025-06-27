@@ -28,9 +28,26 @@ func Generate(
 	target messageflow.Target,
 	title, outputDir string,
 ) error {
+	metadata, err := processMetadata(schema, outputDir)
+	if err != nil {
+		return fmt.Errorf("error processing metadata: %w", err)
+	}
+
+	if err := generateDiagrams(ctx, schema, target, outputDir); err != nil {
+		return fmt.Errorf("error generating diagrams: %w", err)
+	}
+
+	if err := createREADMEContent(schema, title, metadata.Changelogs, outputDir); err != nil {
+		return fmt.Errorf("error creating README content: %w", err)
+	}
+
+	return nil
+}
+
+func processMetadata(schema messageflow.Schema, outputDir string) (*Metadata, error) {
 	existingMetadata, err := readMetadata(outputDir)
 	if err != nil {
-		return fmt.Errorf("error reading existing messageflow data: %w", err)
+		return nil, fmt.Errorf("error reading existing messageflow data: %w", err)
 	}
 
 	var newChangelog *messageflow.Changelog
@@ -54,45 +71,41 @@ func Generate(
 	}
 
 	if err := writeMetadata(outputDir, metadata); err != nil {
-		return fmt.Errorf("error writing messageflow data: %w", err)
+		return nil, fmt.Errorf("error writing messageflow data: %w", err)
 	}
 
-	contextDiagram, err := generateContextDiagram(ctx, schema, target)
-	if err != nil {
+	return &metadata, nil
+}
+
+func generateDiagrams(
+	ctx context.Context,
+	schema messageflow.Schema,
+	target messageflow.Target,
+	outputDir string,
+) error {
+	diagramsDir := filepath.Join(outputDir, "diagrams")
+	if err := os.RemoveAll(diagramsDir); err != nil {
+		return fmt.Errorf("error removing old diagrams directory: %w", err)
+	}
+	if err := os.MkdirAll(diagramsDir, 0755); err != nil {
+		return fmt.Errorf("error creating diagrams directory: %w", err)
+	}
+
+	if err := generateContextDiagram(ctx, schema, target, outputDir); err != nil {
 		return fmt.Errorf("error generating context diagram: %w", err)
 	}
 
-	serviceDiagrams := make(map[string][]byte)
 	for _, service := range schema.Services {
-		diagram, err := generateServiceServicesDiagram(ctx, schema, target, service.Name)
-		if err != nil {
+		if err := generateServiceServicesDiagram(ctx, schema, target, service.Name, outputDir); err != nil {
 			return fmt.Errorf("error generating service services diagram for %s: %w", service.Name, err)
 		}
-		serviceDiagrams[service.Name] = diagram
 	}
 
-	channelDiagrams := make(map[string][]byte)
 	channels := extractUniqueChannels(schema)
 	for _, channel := range channels {
-		diagram, err := generateChannelServicesDiagram(ctx, schema, target, channel)
-		if err != nil {
+		if err := generateChannelServicesDiagram(ctx, schema, target, channel, outputDir); err != nil {
 			return fmt.Errorf("error generating channel services diagram for %s: %w", channel, err)
 		}
-		channelDiagrams[channel] = diagram
-	}
-
-	if err := writeDiagramFiles(outputDir, contextDiagram, serviceDiagrams, channelDiagrams); err != nil {
-		return fmt.Errorf("error writing diagram files: %w", err)
-	}
-
-	readmeContent, err := createREADMEContent(schema, title, metadata.Changelogs)
-	if err != nil {
-		return fmt.Errorf("error creating README content: %w", err)
-	}
-
-	readmePath := filepath.Join(outputDir, "README.md")
-	if err := os.WriteFile(readmePath, []byte(readmeContent), 0644); err != nil {
-		return fmt.Errorf("error writing README.md: %w", err)
 	}
 
 	return nil
@@ -102,22 +115,29 @@ func generateContextDiagram(
 	ctx context.Context,
 	schema messageflow.Schema,
 	target messageflow.Target,
-) ([]byte, error) {
+	outputDir string,
+) error {
 	formatOpts := messageflow.FormatOptions{
 		Mode: messageflow.FormatModeContextServices,
 	}
 
 	formattedSchema, err := target.FormatSchema(ctx, schema, formatOpts)
 	if err != nil {
-		return nil, fmt.Errorf("error formatting context schema: %w", err)
+		return fmt.Errorf("error formatting context schema: %w", err)
 	}
 
 	diagram, err := target.RenderSchema(ctx, formattedSchema)
 	if err != nil {
-		return nil, fmt.Errorf("error rendering context diagram: %w", err)
+		return fmt.Errorf("error rendering context diagram: %w", err)
 	}
 
-	return diagram, nil
+	// Write the diagram file immediately
+	contextPath := filepath.Join(outputDir, "diagrams", "context.svg")
+	if err := os.WriteFile(contextPath, diagram, 0644); err != nil {
+		return fmt.Errorf("error writing context diagram: %w", err)
+	}
+
+	return nil
 }
 
 func generateServiceServicesDiagram(
@@ -125,7 +145,8 @@ func generateServiceServicesDiagram(
 	schema messageflow.Schema,
 	target messageflow.Target,
 	serviceName string,
-) ([]byte, error) {
+	outputDir string,
+) error {
 	formatOpts := messageflow.FormatOptions{
 		Mode:    messageflow.FormatModeServiceServices,
 		Service: serviceName,
@@ -133,15 +154,22 @@ func generateServiceServicesDiagram(
 
 	formattedSchema, err := target.FormatSchema(ctx, schema, formatOpts)
 	if err != nil {
-		return nil, fmt.Errorf("error formatting service services schema: %w", err)
+		return fmt.Errorf("error formatting service services schema: %w", err)
 	}
 
 	diagram, err := target.RenderSchema(ctx, formattedSchema)
 	if err != nil {
-		return nil, fmt.Errorf("error rendering service services diagram: %w", err)
+		return fmt.Errorf("error rendering service services diagram: %w", err)
 	}
 
-	return diagram, nil
+	// Write the diagram file immediately
+	serviceAnchor := sanitizeAnchor(serviceName)
+	servicePath := filepath.Join(outputDir, "diagrams", fmt.Sprintf("service_%s.svg", serviceAnchor))
+	if err := os.WriteFile(servicePath, diagram, 0644); err != nil {
+		return fmt.Errorf("error writing service diagram for %s: %w", serviceName, err)
+	}
+
+	return nil
 }
 
 func generateChannelServicesDiagram(
@@ -149,7 +177,8 @@ func generateChannelServicesDiagram(
 	schema messageflow.Schema,
 	target messageflow.Target,
 	channel string,
-) ([]byte, error) {
+	outputDir string,
+) error {
 	formatOpts := messageflow.FormatOptions{
 		Mode:         messageflow.FormatModeChannelServices,
 		Channel:      channel,
@@ -158,15 +187,22 @@ func generateChannelServicesDiagram(
 
 	formattedSchema, err := target.FormatSchema(ctx, schema, formatOpts)
 	if err != nil {
-		return nil, fmt.Errorf("error formatting channel services schema: %w", err)
+		return fmt.Errorf("error formatting channel services schema: %w", err)
 	}
 
 	diagram, err := target.RenderSchema(ctx, formattedSchema)
 	if err != nil {
-		return nil, fmt.Errorf("error rendering channel services diagram: %w", err)
+		return fmt.Errorf("error rendering channel services diagram: %w", err)
 	}
 
-	return diagram, nil
+	// Write the diagram file immediately
+	channelAnchor := sanitizeAnchor(channel)
+	channelPath := filepath.Join(outputDir, "diagrams", fmt.Sprintf("channel_%s.svg", channelAnchor))
+	if err := os.WriteFile(channelPath, diagram, 0644); err != nil {
+		return fmt.Errorf("error writing channel diagram for %s: %w", channel, err)
+	}
+
+	return nil
 }
 
 func extractUniqueChannels(schema messageflow.Schema) []string {
@@ -190,7 +226,7 @@ func extractUniqueChannels(schema messageflow.Schema) []string {
 	return channels
 }
 
-func createREADMEContent(schema messageflow.Schema, title string, changelogs []messageflow.Changelog) (string, error) {
+func createREADMEContent(schema messageflow.Schema, title string, changelogs []messageflow.Changelog, outputDir string) error {
 	tmpl, err := template.New("readme.tmpl").Funcs(template.FuncMap{
 		"Anchor": func(name string) string {
 			return sanitizeAnchor(name)
@@ -221,7 +257,7 @@ func createREADMEContent(schema messageflow.Schema, title string, changelogs []m
 		},
 	}).ParseFS(readmeTemplateFS, "templates/readme.tmpl")
 	if err != nil {
-		return "", fmt.Errorf("error parsing README template: %w", err)
+		return fmt.Errorf("error parsing README template: %w", err)
 	}
 
 	channels := extractUniqueChannels(schema)
@@ -247,10 +283,15 @@ func createREADMEContent(schema messageflow.Schema, title string, changelogs []m
 
 	var buf strings.Builder
 	if err := tmpl.Execute(&buf, data); err != nil {
-		return "", fmt.Errorf("error executing README template: %w", err)
+		return fmt.Errorf("error executing README template: %w", err)
 	}
 
-	return buf.String(), nil
+	readmePath := filepath.Join(outputDir, "README.md")
+	if err := os.WriteFile(readmePath, []byte(buf.String()), 0644); err != nil {
+		return fmt.Errorf("error writing README.md: %w", err)
+	}
+
+	return nil
 }
 
 // ChannelInfo represents information about a channel including its messages and payloads
@@ -357,41 +398,6 @@ func extractChannelInfo(schema messageflow.Schema) map[string]ChannelInfo {
 	}
 
 	return channelInfo
-}
-
-func writeDiagramFiles(outputDir string, contextDiagram []byte, serviceDiagrams, channelDiagrams map[string][]byte) error {
-	diagramsDir := filepath.Join(outputDir, "diagrams")
-
-	if err := os.RemoveAll(diagramsDir); err != nil {
-		return fmt.Errorf("error removing old diagrams directory: %w", err)
-	}
-
-	if err := os.MkdirAll(diagramsDir, 0755); err != nil {
-		return fmt.Errorf("error creating diagrams directory: %w", err)
-	}
-
-	contextPath := filepath.Join(diagramsDir, "context.svg")
-	if err := os.WriteFile(contextPath, contextDiagram, 0644); err != nil {
-		return fmt.Errorf("error writing context diagram: %w", err)
-	}
-
-	for serviceName, diagram := range serviceDiagrams {
-		serviceAnchor := sanitizeAnchor(serviceName)
-		servicePath := filepath.Join(diagramsDir, fmt.Sprintf("service_%s.svg", serviceAnchor))
-		if err := os.WriteFile(servicePath, diagram, 0644); err != nil {
-			return fmt.Errorf("error writing service diagram for %s: %w", serviceName, err)
-		}
-	}
-
-	for channelName, diagram := range channelDiagrams {
-		channelAnchor := sanitizeAnchor(channelName)
-		channelPath := filepath.Join(diagramsDir, fmt.Sprintf("channel_%s.svg", channelAnchor))
-		if err := os.WriteFile(channelPath, diagram, 0644); err != nil {
-			return fmt.Errorf("error writing channel diagram for %s: %w", channelName, err)
-		}
-	}
-
-	return nil
 }
 
 func sanitizeAnchor(name string) string {

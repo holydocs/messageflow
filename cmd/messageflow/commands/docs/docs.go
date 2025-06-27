@@ -7,7 +7,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/denchenko/messageflow/pkg/docs"
+	"github.com/denchenko/messageflow/internal/docs"
 	"github.com/denchenko/messageflow/pkg/schema"
 	"github.com/denchenko/messageflow/pkg/schema/target/d2"
 	"github.com/spf13/cobra"
