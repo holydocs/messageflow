@@ -9,7 +9,7 @@ import (
 	"strings"
 
 	"github.com/denchenko/messageflow"
-	"github.com/denchenko/messageflow/pkg/schema/source/asyncapi"
+	"github.com/denchenko/messageflow/pkg/schema"
 	"github.com/denchenko/messageflow/pkg/schema/target/d2"
 	"github.com/spf13/cobra"
 )
@@ -120,24 +120,11 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 	ctx := context.Background()
 
 	filePaths := strings.Split(asyncAPIFilesPath, ",")
-	schemas := make([]messageflow.Schema, 0, len(filePaths))
 
-	for _, filePath := range filePaths {
-		trimmedPath := strings.TrimSpace(filePath)
-		s, err := asyncapi.NewSource(trimmedPath)
-		if err != nil {
-			return fmt.Errorf("error creating schema source from %s: %w", trimmedPath, err)
-		}
-
-		schema, err := s.ExtractSchema(ctx)
-		if err != nil {
-			return fmt.Errorf("error extracting schema from %s: %w", trimmedPath, err)
-		}
-
-		schemas = append(schemas, schema)
+	s, err := schema.Load(ctx, filePaths)
+	if err != nil {
+		return fmt.Errorf("error loading schema from files: %w", err)
 	}
-
-	schema := messageflow.MergeSchemas(schemas...)
 
 	formatOpts := messageflow.FormatOptions{
 		Mode:         messageflow.FormatMode(formatMode),
@@ -146,7 +133,7 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 		OmitPayloads: omitPayloads,
 	}
 
-	fs, err := target.FormatSchema(ctx, schema, formatOpts)
+	fs, err := target.FormatSchema(ctx, s, formatOpts)
 	if err != nil {
 		return fmt.Errorf("error formatting schema: %w", err)
 	}

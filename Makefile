@@ -21,15 +21,15 @@ lint: $(GOLANGCI_LINT) ## run linters
 examples: ## create examples
 	# init
 	$(GO) run cmd/messageflow/main.go gen-docs \
-		--asyncapi-files source/asyncapi/testdata/analytics.yaml,source/asyncapi/testdata/campaign.yaml,source/asyncapi/testdata/notification.yaml \
+		--asyncapi-files pkg/schema/source/asyncapi/testdata/analytics.yaml,pkg/schema/source/asyncapi/testdata/campaign.yaml,pkg/schema/source/asyncapi/testdata/notification.yaml \
 		--output examples/docs
 	# add user service
 	$(GO) run cmd/messageflow/main.go gen-docs \
-		--asyncapi-files source/asyncapi/testdata/analytics.yaml,source/asyncapi/testdata/campaign.yaml,source/asyncapi/testdata/notification.yaml,source/asyncapi/testdata/user.yaml \
+		--asyncapi-files pkg/schema/source/asyncapi/testdata/analytics.yaml,pkg/schema/source/asyncapi/testdata/campaign.yaml,pkg/schema/source/asyncapi/testdata/notification.yaml,pkg/schema/source/asyncapi/testdata/user.yaml \
 		--output examples/docs
 	# new version of analytics service
 	$(GO) run cmd/messageflow/main.go gen-docs \
-		--asyncapi-files source/asyncapi/testdata/analytics_ver2.yaml,source/asyncapi/testdata/campaign.yaml,source/asyncapi/testdata/notification.yaml,source/asyncapi/testdata/user.yaml \
+		--asyncapi-files pkg/schema/source/asyncapi/testdata/analytics_ver2.yaml,pkg/schema/source/asyncapi/testdata/campaign.yaml,pkg/schema/source/asyncapi/testdata/notification.yaml,pkg/schema/source/asyncapi/testdata/user.yaml \
 		--output examples/docs
 
 $(GOLANGCI_LINT): ## install local golangci-lint
