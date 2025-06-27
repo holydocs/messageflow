@@ -13,8 +13,8 @@ import (
 	"text/template"
 
 	"github.com/denchenko/messageflow"
-	"github.com/denchenko/messageflow/source/asyncapi"
-	"github.com/denchenko/messageflow/target/d2"
+	"github.com/denchenko/messageflow/pkg/schema/source/asyncapi"
+	"github.com/denchenko/messageflow/pkg/schema/target/d2"
 	"github.com/spf13/cobra"
 )
 
