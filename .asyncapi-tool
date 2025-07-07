@@ -1,0 +1,9 @@
+title: MessageFlow
+description: Generate system-architecture documentation and diagrams from AsyncAPI specifications.
+filters:
+  language: Go
+  technology:
+    - Go
+    - D2
+  categories:
+    - documentation-generator
