@@ -52,3 +52,9 @@ The generated documentation includes:
 - **Channel diagrams**: Detailed views of message flows through specific channels
 - **Changelog tracking**: Automatic detection and documentation of schema changes between runs
 - **Message payloads**: JSON schemas for all message types
+
+
+## Known Limitations
+
+* One kind of message per channel;
+* One kind of server protocol per spec.
