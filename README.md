@@ -16,7 +16,11 @@ When you have AsyncAPI specifications for all services in your system, MessageFl
 
 ## Usage
 
-MessageFlow provides a command-line interface.
+MessageFlow provides a command-line interface and can be used via Docker.
+
+### Using Go Binary
+
+Install the binary directly:
 
 ```bash
 go install github.com/denchenko/messageflow/cmd/messageflow@latest
@@ -53,6 +57,17 @@ The generated documentation includes:
 - **Changelog tracking**: Automatic detection and documentation of schema changes between runs
 - **Message payloads**: JSON schemas for all message types
 
+### Using Docker
+
+Pull and run the latest version:
+
+```bash
+# Pull the image
+docker pull ghcr.io/denchenko/messageflow:latest
+
+# Generate documentation
+docker run --rm -v $(pwd):/work -w /work ghcr.io/denchenko/messageflow:latest gen-docs --asyncapi-files "service1.yaml,service2.yaml" --output ./docs
+```
 
 ## Known Limitations
 
