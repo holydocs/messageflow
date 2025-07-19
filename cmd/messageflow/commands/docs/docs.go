@@ -2,15 +2,17 @@ package docs
 
 import (
 	"context"
+	"errors"
 	"fmt"
-	"log"
 	"os"
+	"path/filepath"
 	"strings"
 
 	"github.com/denchenko/messageflow/internal/docs"
 	"github.com/denchenko/messageflow/pkg/schema"
 	"github.com/denchenko/messageflow/pkg/schema/target/d2"
 	"github.com/spf13/cobra"
+	"gopkg.in/yaml.v3"
 )
 
 type Command struct {
@@ -30,14 +32,10 @@ Example:
 		RunE: c.run,
 	}
 
+	c.cmd.Flags().String("dir", "", "Path to dir to scan asyncapi files automatically")
 	c.cmd.Flags().String("asyncapi-files", "", "Paths to asyncapi files separated by comma")
 	c.cmd.Flags().String("output", ".", "Output directory for generated documentation")
 	c.cmd.Flags().String("title", "Message Flow", "Title of the documentation")
-
-	err := c.cmd.MarkFlagRequired("asyncapi-files")
-	if err != nil {
-		log.Fatalf("error marking asyncapi-files flag as required: %v", err)
-	}
 
 	return c
 }
@@ -53,9 +51,9 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("error getting title flag: %w", err)
 	}
 
-	asyncAPIFilesPath, err := cmd.Flags().GetString("asyncapi-files")
+	asyncAPIFilesPaths, err := getAsyncAPIFilesPaths(cmd)
 	if err != nil {
-		return fmt.Errorf("error getting asyncapi-files flag: %w", err)
+		return fmt.Errorf("error getting asyncapi files paths: %w", err)
 	}
 
 	outputDir, err := cmd.Flags().GetString("output")
@@ -69,9 +67,7 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 
 	ctx := context.Background()
 
-	filePaths := strings.Split(asyncAPIFilesPath, ",")
-
-	s, err := schema.Load(ctx, filePaths)
+	s, err := schema.Load(ctx, asyncAPIFilesPaths)
 	if err != nil {
 		return fmt.Errorf("error loading schema from files: %w", err)
 	}
@@ -88,4 +84,75 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 	fmt.Printf("Documentation generated successfully in: %s\n", outputDir)
 
 	return nil
+}
+
+func getAsyncAPIFilesPaths(cmd *cobra.Command) ([]string, error) {
+	asyncAPIFilesPath, err := cmd.Flags().GetString("asyncapi-files")
+	if err != nil {
+		return nil, fmt.Errorf("error getting asyncapi-files flag: %w", err)
+	}
+
+	if asyncAPIFilesPath != "" {
+		return strings.Split(asyncAPIFilesPath, ","), nil
+	}
+
+	asyncAPIFilesDir, err := cmd.Flags().GetString("dir")
+	if err != nil {
+		return nil, fmt.Errorf("error getting dir flag: %w", err)
+	}
+
+	if asyncAPIFilesDir == "" {
+		return nil, errors.New("provide either asyncapi-files or dir")
+	}
+
+	return asyncAPIFilesFromDir(asyncAPIFilesDir)
+}
+
+func asyncAPIFilesFromDir(dir string) ([]string, error) {
+	fmt.Println("Scanning directory for AsyncAPI files:", dir)
+
+	var asyncAPIFiles []string
+
+	err := filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
+		if err != nil {
+			return err
+		}
+
+		if d.IsDir() {
+			return nil
+		}
+
+		ext := strings.ToLower(filepath.Ext(path))
+		if ext != ".yml" && ext != ".yaml" {
+			return nil
+		}
+
+		content, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("error reading file %s: %w", path, err)
+		}
+
+		var yamlDoc map[string]interface{}
+		if err := yaml.Unmarshal(content, &yamlDoc); err != nil {
+			return fmt.Errorf("error unmarshalling yaml file %s: %w", path, err)
+		}
+
+		if _, hasAsyncAPI := yamlDoc["asyncapi"]; hasAsyncAPI {
+			asyncAPIFiles = append(asyncAPIFiles, path)
+		}
+
+		return nil
+	})
+
+	if err != nil {
+		return nil, fmt.Errorf("error walking directory %s: %w", dir, err)
+	}
+
+	if len(asyncAPIFiles) == 0 {
+		return nil, fmt.Errorf("no AsyncAPI specification files found in directory %s", dir)
+	}
+
+	fmt.Println("Found AsyncAPI files:", asyncAPIFiles)
+
+	return asyncAPIFiles, nil
 }
