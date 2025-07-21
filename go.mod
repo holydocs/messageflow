@@ -1,4 +1,4 @@
-module github.com/denchenko/messageflow
+module github.com/holydocs/messageflow
 
 go 1.23.9
 

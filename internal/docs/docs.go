@@ -11,7 +11,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/denchenko/messageflow"
+	"github.com/holydocs/messageflow"
 	"golang.org/x/sync/errgroup"
 )
 

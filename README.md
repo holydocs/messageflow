@@ -1,8 +1,8 @@
 # MessageFlow
 
-[![Run Tests](https://github.com/denchenko/messageflow/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/denchenko/messageflow/actions/workflows/go.yml)
-[![Go Report Card](https://goreportcard.com/badge/github.com/denchenko/messageflow)](https://goreportcard.com/report/github.com/denchenko/messageflow)
-[![GoDoc](https://godoc.org/github.com/denchenko/messageflow?status.svg)](https://godoc.org/github.com/denchenko/messageflow)
+[![Run Tests](https://github.com/holydocs/messageflow/actions/workflows/go.yml/badge.svg?branch=main)](https://github.com/holydocs/messageflow/actions/workflows/go.yml)
+[![Go Report Card](https://goreportcard.com/badge/github.com/holydocs/messageflow)](https://goreportcard.com/report/github.com/holydocs/messageflow)
+[![GoDoc](https://godoc.org/github.com/holydocs/messageflow?status.svg)](https://godoc.org/github.com/holydocs/messageflow)
 
 MessageFlow is a Go library and CLI tool for visualizing AsyncAPI specifications. It provides tools to parse AsyncAPI documents and transform them into visual formats, making it easier to understand message flows and service interactions in asynchronous systems.
 
@@ -23,7 +23,7 @@ MessageFlow provides a command-line interface and can be used via Docker.
 Install the binary directly:
 
 ```bash
-go install github.com/denchenko/messageflow/cmd/messageflow@latest
+go install github.com/holydocs/messageflow/cmd/messageflow@latest
 ```
 
 ### Generate Schema
@@ -63,10 +63,10 @@ Pull and run the latest version:
 
 ```bash
 # Pull the image
-docker pull ghcr.io/denchenko/messageflow:latest
+docker pull ghcr.io/holydocs/messageflow:latest
 
 # Generate documentation
-docker run --rm -v $(pwd):/work -w /work ghcr.io/denchenko/messageflow:latest gen-docs --asyncapi-files "service1.yaml,service2.yaml" --output ./docs
+docker run --rm -v $(pwd):/work -w /work ghcr.io/holydocs/messageflow:latest gen-docs --asyncapi-files "service1.yaml,service2.yaml" --output ./docs
 ```
 
 ## Known Limitations

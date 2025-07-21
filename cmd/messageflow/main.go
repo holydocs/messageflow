@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/denchenko/messageflow/cmd/messageflow/commands/docs"
-	"github.com/denchenko/messageflow/cmd/messageflow/commands/schema"
+	"github.com/holydocs/messageflow/cmd/messageflow/commands/docs"
+	"github.com/holydocs/messageflow/cmd/messageflow/commands/schema"
 	"github.com/spf13/cobra"
 )
 

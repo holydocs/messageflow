@@ -6,7 +6,7 @@ import (
 	"sort"
 	"testing"
 
-	"github.com/denchenko/messageflow"
+	"github.com/holydocs/messageflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

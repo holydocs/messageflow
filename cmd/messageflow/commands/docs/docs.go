@@ -8,9 +8,9 @@ import (
 	"path/filepath"
 	"strings"
 
-	"github.com/denchenko/messageflow/internal/docs"
-	"github.com/denchenko/messageflow/pkg/schema"
-	"github.com/denchenko/messageflow/pkg/schema/target/d2"
+	"github.com/holydocs/messageflow/internal/docs"
+	"github.com/holydocs/messageflow/pkg/schema"
+	"github.com/holydocs/messageflow/pkg/schema/target/d2"
 	"github.com/spf13/cobra"
 	"gopkg.in/yaml.v3"
 )

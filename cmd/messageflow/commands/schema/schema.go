@@ -8,9 +8,9 @@ import (
 	"os"
 	"strings"
 
-	"github.com/denchenko/messageflow"
-	"github.com/denchenko/messageflow/pkg/schema"
-	"github.com/denchenko/messageflow/pkg/schema/target/d2"
+	"github.com/holydocs/messageflow"
+	"github.com/holydocs/messageflow/pkg/schema"
+	"github.com/holydocs/messageflow/pkg/schema/target/d2"
 	"github.com/spf13/cobra"
 )
 

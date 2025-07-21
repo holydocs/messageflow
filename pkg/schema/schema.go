@@ -5,8 +5,8 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/denchenko/messageflow"
-	"github.com/denchenko/messageflow/pkg/schema/source/asyncapi"
+	"github.com/holydocs/messageflow"
+	"github.com/holydocs/messageflow/pkg/schema/source/asyncapi"
 )
 
 func Load(ctx context.Context, paths []string) (messageflow.Schema, error) {
