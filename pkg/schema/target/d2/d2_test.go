@@ -5,7 +5,7 @@ import (
 	"os"
 	"testing"
 
-	"github.com/holydocs/messageflow"
+	"github.com/holydocs/messageflow/pkg/messageflow"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )

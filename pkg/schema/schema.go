@@ -5,7 +5,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/holydocs/messageflow"
+	"github.com/holydocs/messageflow/pkg/messageflow"
 	"github.com/holydocs/messageflow/pkg/schema/source/asyncapi"
 )
 

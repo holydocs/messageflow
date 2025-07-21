@@ -10,7 +10,7 @@ import (
 	"strings"
 	"text/template"
 
-	"github.com/holydocs/messageflow"
+	"github.com/holydocs/messageflow/pkg/messageflow"
 	"oss.terrastruct.com/d2/d2graph"
 	"oss.terrastruct.com/d2/d2layouts/d2elklayout"
 	"oss.terrastruct.com/d2/d2lib"

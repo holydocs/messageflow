@@ -8,7 +8,7 @@ import (
 	"os"
 	"strings"
 
-	"github.com/holydocs/messageflow"
+	"github.com/holydocs/messageflow/pkg/messageflow"
 	"github.com/holydocs/messageflow/pkg/schema"
 	"github.com/holydocs/messageflow/pkg/schema/target/d2"
 	"github.com/spf13/cobra"

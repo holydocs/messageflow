@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"strings"
 
-	"github.com/holydocs/messageflow"
+	"github.com/holydocs/messageflow/pkg/messageflow"
 	"github.com/lerenn/asyncapi-codegen/pkg/asyncapi/parser"
 	asyncapiv3 "github.com/lerenn/asyncapi-codegen/pkg/asyncapi/v3"
 )
