@@ -6,13 +6,31 @@
 
 MessageFlow is a Go library and CLI tool for visualizing AsyncAPI specifications. It provides tools to parse AsyncAPI documents and transform them into visual formats, making it easier to understand message flows and service interactions in asynchronous systems.
 
+## Use Cases
+
+### Single Service
+
 Example of visualizing a Notification service using [this](pkg/schema/source/asyncapi/testdata/notification.yaml) AsyncAPI specification. It can be useful to display service communication with a message bus without requiring detailed knowledge about other services in the ecosystem. Message payloads are displayed as thumbnails when hovering over specific queues. This approach was chosen to keep the schema clean and uncluttered.
 
 ![schema](pkg/schema/target/d2/testdata/service_channels_notification.svg)
 
+### Multiple Services
+
 When you have AsyncAPI specifications for all services in your system, MessageFlow can generate comprehensive documentation showing the complete service ecosystem. See [examples/docs](examples/docs) for a complete multi-service documentation example. For instance, in the generated documentation, the same service now appears like this:
 
 ![schema](examples/docs/diagrams/service_notification-service.svg)
+
+### Automatic Docs Generation Using Github Actions
+
+You can also set up your own centralized documentation hub that automatically generates documentation with changelog whenever source repositories are updated.
+
+```
+Source Repo A ──┐
+Source Repo B ──┼──> MessageFlow Aggregator ──> Generated Docs
+Source Repo C ──┘
+```
+
+Review [messageflow-aggregator-workflow-example](https://github.com/holydocs/messageflow-aggregator-workflow-example) for detailed instructions.
 
 ## Usage
 
