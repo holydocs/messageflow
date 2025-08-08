@@ -52,7 +52,11 @@ func (s *Schema) Sort() {
 				return op1.Channel.Name < op2.Channel.Name
 			}
 
-			return op1.Channel.Message.Name < op2.Channel.Message.Name
+			if len(op1.Channel.Messages) > 0 && len(op2.Channel.Messages) > 0 {
+				return op1.Channel.Messages[0].Name < op2.Channel.Messages[0].Name
+			}
+
+			return len(op1.Channel.Messages) > len(op2.Channel.Messages)
 		})
 	}
 
@@ -82,10 +86,10 @@ type Message struct {
 	Payload string `json:"payload"`
 }
 
-// Channel represents a communication channel with a name and message.
+// Channel represents a communication channel with a name and messages.
 type Channel struct {
-	Name    string  `json:"name"`
-	Message Message `json:"message"`
+	Name     string    `json:"name"`
+	Messages []Message `json:"messages"`
 }
 
 // Operation defines an action to be performed on a channel, optionally with a reply channel.
@@ -173,12 +177,12 @@ func MergeSchemas(schemas ...Schema) Schema {
 				opMap := make(map[string]Operation)
 
 				for _, op := range existingService.Operation {
-					key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message.Name)
+					key := operationKey(op)
 					opMap[key] = op
 				}
 
 				for _, op := range service.Operation {
-					key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message.Name)
+					key := operationKey(op)
 					opMap[key] = op
 				}
 
@@ -298,10 +302,11 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 			})
 		} else {
 			newOp := newOps[key]
-			if !cmp.Equal(oldOp.Channel.Message.Payload, newOp.Channel.Message.Payload) {
+			// Compare channel messages
+			if !cmp.Equal(oldOp.Channel.Messages, newOp.Channel.Messages) {
 				diff := cmp.Diff(
-					oldOp.Channel.Message.Payload,
-					newOp.Channel.Message.Payload,
+					oldOp.Channel.Messages,
+					newOp.Channel.Messages,
 				)
 
 				changes = append(changes, Change{
@@ -309,7 +314,7 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 					Category: "message",
 					Name:     fmt.Sprintf("%s:%s", newService.Name, key),
 					Details: fmt.Sprintf(
-						"Message payload changed for operation '%s' on channel '%s' in service '%s'",
+						"Messages changed for operation '%s' on channel '%s' in service '%s'",
 						newOp.Action, newOp.Channel.Name, newService.Name,
 					),
 					Diff:      diff,
@@ -318,10 +323,10 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 			}
 
 			if oldOp.Reply != nil && newOp.Reply != nil {
-				if !cmp.Equal(oldOp.Reply.Message.Payload, newOp.Reply.Message.Payload) {
+				if !cmp.Equal(oldOp.Reply.Messages, newOp.Reply.Messages) {
 					diff := cmp.Diff(
-						oldOp.Reply.Message.Payload,
-						newOp.Reply.Message.Payload,
+						oldOp.Reply.Messages,
+						newOp.Reply.Messages,
 					)
 
 					changes = append(changes, Change{
@@ -329,7 +334,7 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 						Category: "message",
 						Name:     fmt.Sprintf("%s:%s:reply", newService.Name, key),
 						Details: fmt.Sprintf(
-							"Reply message payload changed for operation '%s' on channel '%s' in service '%s'",
+							"Reply messages changed for operation '%s' on channel '%s' in service '%s'",
 							newOp.Action, newOp.Channel.Name, newService.Name,
 						),
 						Diff:      diff,
@@ -366,9 +371,18 @@ func compareServiceOperations(oldService, newService Service, timestamp time.Tim
 }
 
 func operationKey(op Operation) string {
-	key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, op.Channel.Message.Name)
+	messageName := ""
+	if len(op.Channel.Messages) > 0 {
+		messageName = op.Channel.Messages[0].Name
+	}
+
+	key := fmt.Sprintf("%s-%s-%s", op.Action, op.Channel.Name, messageName)
 	if op.Reply != nil {
-		key += fmt.Sprintf("-reply-%s-%s", op.Reply.Name, op.Reply.Message.Name)
+		replyMessageName := ""
+		if len(op.Reply.Messages) > 0 {
+			replyMessageName = op.Reply.Messages[0].Name
+		}
+		key += fmt.Sprintf("-reply-%s-%s", op.Reply.Name, replyMessageName)
 	}
 	return key
 }

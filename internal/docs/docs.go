@@ -351,50 +351,58 @@ func extractChannelInfo(schema messageflow.Schema) map[string]ChannelInfo {
 		}
 
 		if hasReply {
-			// For req/reply pattern: include both request and reply messages
+			// For req/reply pattern: include all request and reply messages
 			for _, op := range operations {
 				if op.operation.Reply != nil {
-					info.Messages = append(info.Messages, ChannelMessage{
-						Name:      op.operation.Channel.Message.Name,
-						Payload:   op.operation.Channel.Message.Payload,
-						Direction: "request",
-						Service:   op.service,
-					})
-					info.Messages = append(info.Messages, ChannelMessage{
-						Name:      op.operation.Reply.Message.Name,
-						Payload:   op.operation.Reply.Message.Payload,
-						Direction: "reply",
-						Service:   op.service,
-					})
+					for _, msg := range op.operation.Channel.Messages {
+						info.Messages = append(info.Messages, ChannelMessage{
+							Name:      msg.Name,
+							Payload:   msg.Payload,
+							Direction: "request",
+							Service:   op.service,
+						})
+					}
+					for _, msg := range op.operation.Reply.Messages {
+						info.Messages = append(info.Messages, ChannelMessage{
+							Name:      msg.Name,
+							Payload:   msg.Payload,
+							Direction: "reply",
+							Service:   op.service,
+						})
+					}
 					break
 				}
 			}
 		} else {
-			// For send/receive pattern: prefer the receive message
+			// For send/receive pattern: include all messages from receive operations first, then send operations
 			receiveFound := false
 			for _, op := range operations {
 				if op.operation.Action == messageflow.ActionReceive {
-					info.Messages = append(info.Messages, ChannelMessage{
-						Name:      op.operation.Channel.Message.Name,
-						Payload:   op.operation.Channel.Message.Payload,
-						Direction: "receive",
-						Service:   op.service,
-					})
+					for _, msg := range op.operation.Channel.Messages {
+						info.Messages = append(info.Messages, ChannelMessage{
+							Name:      msg.Name,
+							Payload:   msg.Payload,
+							Direction: "receive",
+							Service:   op.service,
+						})
+					}
 					receiveFound = true
 					break
 				}
 			}
 
-			// If no receive operation found, use the send message
+			// If no receive operation found, use the send messages
 			if !receiveFound {
 				for _, op := range operations {
 					if op.operation.Action == messageflow.ActionSend {
-						info.Messages = append(info.Messages, ChannelMessage{
-							Name:      op.operation.Channel.Message.Name,
-							Payload:   op.operation.Channel.Message.Payload,
-							Direction: "send",
-							Service:   op.service,
-						})
+						for _, msg := range op.operation.Channel.Messages {
+							info.Messages = append(info.Messages, ChannelMessage{
+								Name:      msg.Name,
+								Payload:   msg.Payload,
+								Direction: "send",
+								Service:   op.service,
+							})
+						}
 						break
 					}
 				}

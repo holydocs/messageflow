@@ -89,38 +89,28 @@ func (s *Source) createOperation(op *asyncapiv3.Operation) *messageflow.Operatio
 		return nil
 	}
 
-	mainMsgPayload, replyMsgPayload := s.extractMainMessagePayload(op), s.extractReplyMessagePayload(op)
-	mainMsgName, replyMsgName := s.extractMainMessageName(op), s.extractReplyMessageName(op)
-
-	jsonSchema, err := jsonMessage(mainMsgPayload)
-	if err != nil {
+	mainMessages := s.extractMainMessages(op)
+	if len(mainMessages) == 0 {
 		return nil
 	}
 
 	operation := messageflow.Operation{
 		Action: messageflow.Action(op.Action),
 		Channel: messageflow.Channel{
-			Name: channel.Address,
-			Message: messageflow.Message{
-				Name:    mainMsgName,
-				Payload: jsonSchema,
-			},
+			Name:     channel.Address,
+			Messages: mainMessages,
 		},
 	}
 
-	if replyMsgPayload != nil {
-		replyChannel := op.Reply.Channel.Follow()
-		if replyChannel != nil {
-			replySchema, err := jsonMessage(replyMsgPayload)
-			if err != nil {
-				return nil
-			}
-			operation.Reply = &messageflow.Channel{
-				Name: replyChannel.Address,
-				Message: messageflow.Message{
-					Name:    replyMsgName,
-					Payload: replySchema,
-				},
+	if op.Reply != nil {
+		replyMessages := s.extractReplyMessages(op)
+		if len(replyMessages) > 0 {
+			replyChannel := op.Reply.Channel.Follow()
+			if replyChannel != nil {
+				operation.Reply = &messageflow.Channel{
+					Name:     replyChannel.Address,
+					Messages: replyMessages,
+				}
 			}
 		}
 	}
@@ -128,113 +118,99 @@ func (s *Source) createOperation(op *asyncapiv3.Operation) *messageflow.Operatio
 	return &operation
 }
 
-// extractMainMessagePayload extracts the main message payload from an operation.
-func (s *Source) extractMainMessagePayload(op *asyncapiv3.Operation) *asyncapiv3.Schema {
-	if len(op.Messages) == 0 || op.Messages[0] == nil {
-		return nil
+// extractMainMessages extracts all main messages from an operation.
+func (s *Source) extractMainMessages(op *asyncapiv3.Operation) []messageflow.Message {
+	messages := make([]messageflow.Message, 0)
+
+	for _, msgRef := range op.Messages {
+		if msgRef == nil {
+			continue
+		}
+
+		msg := msgRef
+		for msg != nil && msg.Payload == nil && msg.ReferenceTo != nil {
+			msg = msg.ReferenceTo
+		}
+
+		if msg == nil || msg.Payload == nil {
+			continue
+		}
+
+		jsonSchema, err := jsonMessage(msg.Payload)
+		if err != nil {
+			continue
+		}
+
+		messageName := s.extractMessageName(msg)
+		messages = append(messages, messageflow.Message{
+			Name:    messageName,
+			Payload: jsonSchema,
+		})
 	}
 
-	msg := op.Messages[0]
-	for msg != nil && msg.Payload == nil && msg.ReferenceTo != nil {
-		msg = msg.ReferenceTo
-	}
-
-	return msg.Payload
+	return messages
 }
 
-// extractReplyMessagePayload extracts the reply message payload from an operation.
-func (s *Source) extractReplyMessagePayload(op *asyncapiv3.Operation) *asyncapiv3.Schema {
+// extractReplyMessages extracts all reply messages from an operation.
+func (s *Source) extractReplyMessages(op *asyncapiv3.Operation) []messageflow.Message {
 	if op.Reply == nil {
 		return nil
 	}
 
-	replyChannel := op.Reply.Channel.Follow()
-	if replyChannel == nil || len(op.Reply.Messages) == 0 || op.Reply.Messages[0] == nil {
-		return nil
+	messages := make([]messageflow.Message, 0)
+
+	for _, msgRef := range op.Reply.Messages {
+		if msgRef == nil {
+			continue
+		}
+
+		msg := msgRef
+		for msg != nil && msg.Payload == nil && msg.ReferenceTo != nil {
+			msg = msg.ReferenceTo
+		}
+
+		if msg == nil || msg.Payload == nil {
+			continue
+		}
+
+		jsonSchema, err := jsonMessage(msg.Payload)
+		if err != nil {
+			continue
+		}
+
+		messageName := s.extractMessageName(msg)
+		messages = append(messages, messageflow.Message{
+			Name:    messageName,
+			Payload: jsonSchema,
+		})
 	}
 
-	msg := op.Reply.Messages[0]
-	for msg != nil && msg.Payload == nil && msg.ReferenceTo != nil {
-		msg = msg.ReferenceTo
-	}
-
-	return msg.Payload
+	return messages
 }
 
-// extractMainMessageName extracts the main message name from an operation.
-func (s *Source) extractMainMessageName(op *asyncapiv3.Operation) string {
-	if len(op.Messages) == 0 || op.Messages[0] == nil {
+// extractMessageName extracts the message name from a message reference.
+func (s *Source) extractMessageName(msg *asyncapiv3.Message) string {
+	if msg == nil {
 		return ""
 	}
 
-	channel := op.Channel.Follow()
-	if channel == nil {
-		return ""
+	// Try to get name from the message itself
+	if msg.Name != "" {
+		return msg.Name
 	}
 
-	msgRef := op.Messages[0]
-	if msgRef == nil {
-		return ""
+	// If no name in the message, try to get it from the title
+	if msg.Title != "" {
+		return msg.Title
 	}
 
-	msg := msgRef
-	for msg != nil && msg.ReferenceTo != nil {
-		msg = msg.ReferenceTo
+	// If still no name, try to get it from the summary
+	if msg.Summary != "" {
+		return msg.Summary
 	}
 
-	if msg != nil && msg.ReferenceTo == nil {
-		// Try to get the name from the message definition itself
-		if msg.Name != "" {
-			return msg.Name
-		}
-	}
-
-	// If we can't get the name directly, try to extract it from the channel's message map
-	if channel.Messages != nil {
-		for msgName := range channel.Messages {
-			return msgName
-		}
-	}
-
-	return ""
-}
-
-// extractReplyMessageName extracts the reply message name from an operation.
-func (s *Source) extractReplyMessageName(op *asyncapiv3.Operation) string {
-	if op.Reply == nil {
-		return ""
-	}
-
-	replyChannel := op.Reply.Channel.Follow()
-	if replyChannel == nil || len(op.Reply.Messages) == 0 || op.Reply.Messages[0] == nil {
-		return ""
-	}
-
-	msgRef := op.Reply.Messages[0]
-	if msgRef == nil {
-		return ""
-	}
-
-	msg := msgRef
-	for msg != nil && msg.ReferenceTo != nil {
-		msg = msg.ReferenceTo
-	}
-
-	if msg != nil && msg.ReferenceTo == nil {
-		// Try to get the name from the message definition itself
-		if msg.Name != "" {
-			return msg.Name
-		}
-	}
-
-	// If we can't get the name directly, try to extract it from the channel's message map
-	if replyChannel.Messages != nil {
-		for msgName := range replyChannel.Messages {
-			return msgName
-		}
-	}
-
-	return ""
+	// Fallback to a generic name
+	return "UnknownMessage"
 }
 
 // jsonMessage converts an AsyncAPI schema into a pretty-printed JSON string.

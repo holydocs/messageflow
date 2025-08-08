@@ -22,18 +22,21 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.preferences.get",
-							Message: messageflow.Message{
-								Name: "PreferencesRequest",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesRequest",
+									Payload: `{
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "notification.preferences.get",
-							Message: messageflow.Message{
-								Name: "PreferencesReply",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesReply",
+									Payload: `{
   "preferences": {
     "categories": {
       "marketing": "boolean",
@@ -51,6 +54,7 @@ func TestFormatSchema(t *testing.T) {
   },
   "updated_at": "string[date-time]"
 }`,
+								},
 							},
 						},
 					},
@@ -58,9 +62,10 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.preferences.update",
-							Message: messageflow.Message{
-								Name: "PreferencesUpdate",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesUpdate",
+									Payload: `{
   "preferences": {
     "categories": {
       "marketing": "boolean",
@@ -79,6 +84,7 @@ func TestFormatSchema(t *testing.T) {
   "updated_at": "string[date-time]",
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 					},
@@ -86,9 +92,10 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.user.{user_id}.push",
-							Message: messageflow.Message{
-								Name: "PushNotification",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PushNotification",
+									Payload: `{
   "body": "string",
   "created_at": "string[date-time]",
   "data": "object",
@@ -97,6 +104,7 @@ func TestFormatSchema(t *testing.T) {
   "title": "string",
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 					},
@@ -104,16 +112,20 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name:    "UserInfoRequest",
-								Payload: `{"user_id": "string[uuid]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserInfoRequest",
+									Payload: `{"user_id": "string[uuid]"}`,
+								},
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name:    "UserInfoReply",
-								Payload: `{"email": "string[email]", "name": "string"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserInfoReply",
+									Payload: `{"email": "string[email]", "name": "string"}`,
+								},
 							},
 						},
 					},
@@ -121,9 +133,11 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "notification.analytics",
-							Message: messageflow.Message{
-								Name:    "AnalyticsEvent",
-								Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "AnalyticsEvent",
+									Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+								},
 							},
 						},
 					},
@@ -136,16 +150,20 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name:    "UserInfoRequest",
-								Payload: `{"user_id": "string[uuid]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserInfoRequest",
+									Payload: `{"user_id": "string[uuid]"}`,
+								},
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name:    "UserInfoReply",
-								Payload: `{"email": "string[email]", "name": "string"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserInfoReply",
+									Payload: `{"email": "string[email]", "name": "string"}`,
+								},
 							},
 						},
 					},
@@ -153,9 +171,11 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "user.created",
-							Message: messageflow.Message{
-								Name:    "UserCreated",
-								Payload: `{"user_id": "string[uuid]", "email": "string[email]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserCreated",
+									Payload: `{"user_id": "string[uuid]", "email": "string[email]"}`,
+								},
 							},
 						},
 					},
@@ -168,9 +188,11 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.analytics",
-							Message: messageflow.Message{
-								Name:    "AnalyticsEvent",
-								Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "AnalyticsEvent",
+									Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+								},
 							},
 						},
 					},
@@ -178,9 +200,11 @@ func TestFormatSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "user.created",
-							Message: messageflow.Message{
-								Name:    "UserCreated",
-								Payload: `{"user_id": "string[uuid]", "email": "string[email]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserCreated",
+									Payload: `{"user_id": "string[uuid]", "email": "string[email]"}`,
+								},
 							},
 						},
 					},
@@ -280,18 +304,21 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.preferences.get",
-							Message: messageflow.Message{
-								Name: "PreferencesRequest",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesRequest",
+									Payload: `{
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "notification.preferences.get",
-							Message: messageflow.Message{
-								Name: "PreferencesReply",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesReply",
+									Payload: `{
   "preferences": {
     "categories": {
       "marketing": "boolean",
@@ -309,6 +336,7 @@ func TestRenderSchema(t *testing.T) {
   },
   "updated_at": "string[date-time]"
 }`,
+								},
 							},
 						},
 					},
@@ -316,9 +344,10 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.preferences.update",
-							Message: messageflow.Message{
-								Name: "PreferencesUpdate",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesUpdate",
+									Payload: `{
   "preferences": {
     "categories": {
       "marketing": "boolean",
@@ -337,6 +366,7 @@ func TestRenderSchema(t *testing.T) {
   "updated_at": "string[date-time]",
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 					},
@@ -344,9 +374,10 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.user.{user_id}.push",
-							Message: messageflow.Message{
-								Name: "PushNotification",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PushNotification",
+									Payload: `{
   "body": "string",
   "created_at": "string[date-time]",
   "data": "object",
@@ -355,6 +386,7 @@ func TestRenderSchema(t *testing.T) {
   "title": "string",
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 					},
@@ -362,16 +394,20 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name:    "UserInfoRequest",
-								Payload: `{"user_id": "string[uuid]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserInfoRequest",
+									Payload: `{"user_id": "string[uuid]"}`,
+								},
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name:    "UserInfoReply",
-								Payload: `{"email": "string[email]", "name": "string"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserInfoReply",
+									Payload: `{"email": "string[email]", "name": "string"}`,
+								},
 							},
 						},
 					},
@@ -379,9 +415,11 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "notification.analytics",
-							Message: messageflow.Message{
-								Name:    "AnalyticsEvent",
-								Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "AnalyticsEvent",
+									Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+								},
 							},
 						},
 					},
@@ -394,16 +432,20 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name:    "UserInfoRequest",
-								Payload: `{"user_id": "string[uuid]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserInfoRequest",
+									Payload: `{"user_id": "string[uuid]"}`,
+								},
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name:    "UserInfoReply",
-								Payload: `{"email": "string[email]", "name": "string"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserInfoReply",
+									Payload: `{"email": "string[email]", "name": "string"}`,
+								},
 							},
 						},
 					},
@@ -411,9 +453,11 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "user.created",
-							Message: messageflow.Message{
-								Name:    "UserCreated",
-								Payload: `{"user_id": "string[uuid]", "email": "string[email]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserCreated",
+									Payload: `{"user_id": "string[uuid]", "email": "string[email]"}`,
+								},
 							},
 						},
 					},
@@ -426,9 +470,11 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.analytics",
-							Message: messageflow.Message{
-								Name:    "AnalyticsEvent",
-								Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "AnalyticsEvent",
+									Payload: `{"event_type": "string", "user_id": "string[uuid]"}`,
+								},
 							},
 						},
 					},
@@ -436,9 +482,11 @@ func TestRenderSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "user.created",
-							Message: messageflow.Message{
-								Name:    "UserCreated",
-								Payload: `{"user_id": "string[uuid]", "email": "string[email]"}`,
+							Messages: []messageflow.Message{
+								{
+									Name:    "UserCreated",
+									Payload: `{"user_id": "string[uuid]", "email": "string[email]"}`,
+								},
 							},
 						},
 					},

@@ -24,10 +24,12 @@
   {{- if and (eq .Action "receive") (not .Reply) }}
 '{{.Channel.Name}}': { 
   shape: queue
-  {{- if .Channel.Message.Payload }}
+  {{- if .Channel.Messages }}
   tooltip: ||json
-Message({{.Channel.Message.Name}}):
-{{.Channel.Message.Payload}}
+{{- range .Channel.Messages }}
+Message({{.Name}}):
+{{.Payload}}
+{{- end }}
   ||
   {{- end }}
 }
@@ -44,10 +46,12 @@ Message({{.Channel.Message.Name}}):
     {{- if and (eq .Action "send") (not .Reply) }}
   '{{.Channel.Name}}': { 
     shape: queue
-{{- if .Channel.Message.Payload }}
+{{- if .Channel.Messages }}
     tooltip: ||json
-Message({{.Channel.Message.Name}}):
-{{.Channel.Message.Payload}}
+{{- range .Channel.Messages }}
+Message({{.Name}}):
+{{.Payload}}
+{{- end }}
     ||
     {{- end }}
   }
@@ -64,12 +68,16 @@ Message({{.Channel.Message.Name}}):
     {{- if and (eq .Action "receive") .Reply }}
   '{{.Channel.Name}}': { 
     shape: queue
-    {{- if or .Channel.Message.Payload .Reply.Message.Payload }}
+    {{- if or .Channel.Messages .Reply.Messages }}
     tooltip: ||json
-Request({{.Channel.Message.Name}}):
-{{.Channel.Message.Payload}}
-Reply({{.Reply.Message.Name}}):
-{{.Reply.Message.Payload}}
+{{- range .Channel.Messages }}
+Request({{.Name}}):
+{{.Payload}}
+{{- end }}
+{{- range .Reply.Messages }}
+Reply({{.Name}}):
+{{.Payload}}
+{{- end }}
     ||
     {{- end }}
   }
@@ -86,12 +94,16 @@ Reply({{.Reply.Message.Name}}):
     {{- if and (eq .Action "send") .Reply }}
   '{{.Channel.Name}}': { 
     shape: queue
-    {{- if or .Channel.Message.Payload .Reply.Message.Payload }}
+    {{- if or .Channel.Messages .Reply.Messages }}
     tooltip: ||json
-Request({{.Channel.Message.Name}}):
-{{.Channel.Message.Payload}}
-Reply({{.Reply.Message.Name}}):
-{{.Reply.Message.Payload}}
+{{- range .Channel.Messages }}
+Request({{.Name}}):
+{{.Payload}}
+{{- end }}
+{{- range .Reply.Messages }}
+Reply({{.Name}}):
+{{.Payload}}
+{{- end }}
     ||
     {{- end }}
   }

@@ -89,5 +89,4 @@ docker run --rm -v $(pwd):/work -w /work ghcr.io/holydocs/messageflow:latest gen
 
 ## Known Limitations
 
-* One kind of message per channel;
 * One kind of server protocol per spec.

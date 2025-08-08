@@ -260,15 +260,21 @@ func prepareChannelServicesPayload(s messageflow.Schema, channel string, omitPay
 					payload.Receivers = append(payload.Receivers, service.Name)
 				}
 
-				if len(payload.Message) < len(op.Channel.Message.Payload) {
-					payload.Message = op.Channel.Message.Payload
-					payload.MessageName = op.Channel.Message.Name
+				if len(op.Channel.Messages) > 0 {
+					firstMessage := op.Channel.Messages[0]
+					if len(payload.Message) < len(firstMessage.Payload) {
+						payload.Message = firstMessage.Payload
+						payload.MessageName = firstMessage.Name
+					}
 				}
 
-				if op.Reply != nil && (payload.ReplyMessage == nil ||
-					(len(*payload.ReplyMessage) < len(op.Reply.Message.Payload))) {
-					payload.ReplyMessage = &op.Reply.Message.Payload
-					payload.ReplyMessageName = &op.Reply.Message.Name
+				if op.Reply != nil && len(op.Reply.Messages) > 0 {
+					firstReplyMessage := op.Reply.Messages[0]
+					if payload.ReplyMessage == nil ||
+						(len(*payload.ReplyMessage) < len(firstReplyMessage.Payload)) {
+						payload.ReplyMessage = &firstReplyMessage.Payload
+						payload.ReplyMessageName = &firstReplyMessage.Name
+					}
 				}
 			}
 		}

@@ -6,13 +6,19 @@
   shape: queue
   tooltip: ||json
 {{- if .Reply }}
-Request({{.Channel.Message.Name}}):
-{{.Channel.Message.Payload}}
-Reply({{.Reply.Message.Name}}):
-{{.Reply.Message.Payload}}
+{{- range .Channel.Messages }}
+Request({{.Name}}):
+{{.Payload}}
+{{- end }}
+{{- range .Reply.Messages }}
+Reply({{.Name}}):
+{{.Payload}}
+{{- end }}
 {{- else }}
-Message({{.Channel.Message.Name}}):
-{{.Channel.Message.Payload}}
+{{- range .Channel.Messages }}
+Message({{.Name}}):
+{{.Payload}}
+{{- end }}
 {{- end }}
 ||
 }

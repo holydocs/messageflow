@@ -28,18 +28,21 @@ func TestExtractSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.preferences.get",
-							Message: messageflow.Message{
-								Name: "PreferencesRequestMessage",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesRequestMessage",
+									Payload: `{
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "notification.preferences.get",
-							Message: messageflow.Message{
-								Name: "PreferencesReplyMessage",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesReplyMessage",
+									Payload: `{
   "preferences": {
     "categories": {
       "marketing": "boolean",
@@ -57,6 +60,7 @@ func TestExtractSchema(t *testing.T) {
   },
   "updated_at": "string[date-time]"
 }`,
+								},
 							},
 						},
 					},
@@ -64,9 +68,10 @@ func TestExtractSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.preferences.update",
-							Message: messageflow.Message{
-								Name: "PreferencesUpdateMessage",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PreferencesUpdateMessage",
+									Payload: `{
   "preferences": {
     "categories": {
       "marketing": "boolean",
@@ -85,6 +90,7 @@ func TestExtractSchema(t *testing.T) {
   "updated_at": "string[date-time]",
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 					},
@@ -92,9 +98,10 @@ func TestExtractSchema(t *testing.T) {
 						Action: messageflow.ActionReceive,
 						Channel: messageflow.Channel{
 							Name: "notification.user.{user_id}.push",
-							Message: messageflow.Message{
-								Name: "PushNotificationMessage",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "PushNotificationMessage",
+									Payload: `{
   "body": "string",
   "created_at": "string[date-time]",
   "data": "object",
@@ -103,6 +110,7 @@ func TestExtractSchema(t *testing.T) {
   "title": "string",
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 					},
@@ -110,18 +118,21 @@ func TestExtractSchema(t *testing.T) {
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name: "UserInfoRequestMessage",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "UserInfoRequestMessage",
+									Payload: `{
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 						Reply: &messageflow.Channel{
 							Name: "user.info.request",
-							Message: messageflow.Message{
-								Name: "UserInfoReplyMessage",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "UserInfoReplyMessage",
+									Payload: `{
   "email": "string[email]",
   "error": {
     "code": "string",
@@ -132,6 +143,7 @@ func TestExtractSchema(t *testing.T) {
   "timezone": "string",
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 					},
@@ -139,9 +151,10 @@ func TestExtractSchema(t *testing.T) {
 						Action: messageflow.ActionSend,
 						Channel: messageflow.Channel{
 							Name: "notification.analytics",
-							Message: messageflow.Message{
-								Name: "AnalyticsEventMessage",
-								Payload: `{
+							Messages: []messageflow.Message{
+								{
+									Name: "AnalyticsEventMessage",
+									Payload: `{
   "event_id": "string[uuid]",
   "event_type": "string[enum:notification_sent,notification_opened,notification_clicked]",
   "metadata": {
@@ -154,6 +167,7 @@ func TestExtractSchema(t *testing.T) {
   "timestamp": "string[date-time]",
   "user_id": "string[uuid]"
 }`,
+								},
 							},
 						},
 					},
