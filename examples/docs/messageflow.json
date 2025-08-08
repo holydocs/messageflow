@@ -274,41 +274,33 @@
   },
   "changelogs": [
     {
-      "date": "2025-06-27T22:58:59.540156+03:00",
+      "date": "2025-08-08T16:57:52.098006+03:00",
       "changes": [
         {
           "type": "added",
           "category": "service",
           "name": "User Service",
           "details": "'User Service' was added",
-          "timestamp": "2025-06-27T22:58:59.540156+03:00"
+          "timestamp": "2025-08-08T16:57:52.098006+03:00"
         }
       ]
     },
     {
-      "date": "2025-06-27T22:59:11.191404+03:00",
+      "date": "2025-08-08T16:57:56.317014+03:00",
       "changes": [
         {
           "type": "added",
           "category": "channel",
           "name": "Analytics Service:send-analytics.warning-AnalyticsWarningMessage",
           "details": "'send' on channel 'analytics.warning' was added to service 'Analytics Service'",
-          "timestamp": "2025-06-27T22:59:11.191404+03:00"
-        },
-        {
-          "type": "changed",
-          "category": "message",
-          "name": "Analytics Service:receive-analytics.report.request-AnalyticsReportRequestMessage-reply-analytics.report.request-AnalyticsReportReplyMessage:reply",
-          "details": "Reply message payload changed for operation 'receive' on channel 'analytics.report.request' in service 'Analytics Service'",
-          "diff": "  (\n  \t\"\"\"\n  \t... // 18 identical lines\n  \t  ],\n  \t  \"report_id\": \"string[uuid]\",\n- \t  \"report_type\": \"string[enum:user_activity,notification_performance,campaign_effectiveness,system_health,custom]\",\n+ \t  \"report_type\": \"string[enum:user_activity,notification_performance,campaign_effectiveness,custom]\",\n  \t  \"summary\": {\n  \t    \"event_types\": \"object\",\n  \t... // 15 identical lines\n  \t\"\"\"\n  )\n",
-          "timestamp": "2025-06-27T22:59:11.191404+03:00"
+          "timestamp": "2025-08-08T16:57:56.317014+03:00"
         },
         {
           "type": "removed",
           "category": "channel",
           "name": "Analytics Service:send-analytics.alert-AnalyticsAlertMessage",
           "details": "'send' on channel 'analytics.alert' was removed from service 'Analytics Service'",
-          "timestamp": "2025-06-27T22:59:11.191404+03:00"
+          "timestamp": "2025-08-08T16:57:56.317014+03:00"
         },
         {
           "type": "changed",
@@ -316,7 +308,15 @@
           "name": "Analytics Service:send-analytics.insights-AnalyticsInsightMessage",
           "details": "Message payload changed for operation 'send' on channel 'analytics.insights' in service 'Analytics Service'",
           "diff": "  (\n  \t\"\"\"\n  \t... // 7 identical lines\n  \t  \"description\": \"string\",\n  \t  \"insight_id\": \"string[uuid]\",\n- \t  \"insight_type\": \"string[enum:trend,anomaly,recommendation,alert]\",\n+ \t  \"insight_type\": \"string[enum:trend,anomaly,recommendation,warning]\",\n  \t  \"metadata\": {\n  \t    \"environment\": \"string[enum:development,staging,production]\",\n  \t... // 10 identical lines\n  \t\"\"\"\n  )\n",
-          "timestamp": "2025-06-27T22:59:11.191404+03:00"
+          "timestamp": "2025-08-08T16:57:56.317014+03:00"
+        },
+        {
+          "type": "changed",
+          "category": "message",
+          "name": "Analytics Service:receive-analytics.report.request-AnalyticsReportRequestMessage-reply-analytics.report.request-AnalyticsReportReplyMessage:reply",
+          "details": "Reply message payload changed for operation 'receive' on channel 'analytics.report.request' in service 'Analytics Service'",
+          "diff": "  (\n  \t\"\"\"\n  \t... // 18 identical lines\n  \t  ],\n  \t  \"report_id\": \"string[uuid]\",\n- \t  \"report_type\": \"string[enum:user_activity,notification_performance,campaign_effectiveness,system_health,custom]\",\n+ \t  \"report_type\": \"string[enum:user_activity,notification_performance,campaign_effectiveness,custom]\",\n  \t  \"summary\": {\n  \t    \"event_types\": \"object\",\n  \t... // 15 identical lines\n  \t\"\"\"\n  )\n",
+          "timestamp": "2025-08-08T16:57:56.317014+03:00"
         }
       ]
     }

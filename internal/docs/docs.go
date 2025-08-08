@@ -7,9 +7,11 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"sort"
 	"strings"
 	"text/template"
+	"unicode"
 
 	"github.com/holydocs/messageflow/pkg/messageflow"
 	"golang.org/x/sync/errgroup"
@@ -405,13 +407,28 @@ func extractChannelInfo(schema messageflow.Schema) map[string]ChannelInfo {
 	return channelInfo
 }
 
+var (
+	multiHyphen = regexp.MustCompile(`-+`)
+)
+
 func sanitizeAnchor(name string) string {
 	anchor := strings.ToLower(name)
 	anchor = strings.ReplaceAll(anchor, " ", "-")
-	anchor = strings.ReplaceAll(anchor, ".", "")
-	anchor = strings.ReplaceAll(anchor, "_", "")
-	anchor = strings.ReplaceAll(anchor, "{", "")
-	anchor = strings.ReplaceAll(anchor, "}", "")
+
+	var result strings.Builder
+
+	for _, r := range anchor {
+		if unicode.IsLetter(r) || unicode.IsNumber(r) || r == '-' || r == '_' {
+			result.WriteRune(r)
+		}
+	}
+
+	anchor = result.String()
+
+	// Clean up multiple consecutive and leading/trailing hyphens
+	anchor = multiHyphen.ReplaceAllString(anchor, "-")
+	anchor = strings.Trim(anchor, "-")
+
 	return anchor
 }
 

@@ -19,7 +19,7 @@
   - [notification.analytics](#notificationanalytics)
   - [notification.preferences.get](#notificationpreferencesget)
   - [notification.preferences.update](#notificationpreferencesupdate)
-  - [notification.user.{user_id}.push](#notificationuseruseridpush)
+  - [notification.user.{user_id}.push](#notificationuseruser_idpush)
   - [user.analytics](#useranalytics)
   - [user.info.request](#userinforequest)
   - [user.info.update](#userinfoupdate)
@@ -448,7 +448,7 @@ Handles user data requests, profile updates, and user lifecycle events.
 
 ### notification.user.{user_id}.push
 
-![notification.user.{user_id}.push Channel Services](diagrams/channel_notificationuseruseridpush.svg)
+![notification.user.{user_id}.push Channel Services](diagrams/channel_notificationuseruser_idpush.svg)
 
 #### Messages
 **PushNotificationMessage**
@@ -533,7 +533,7 @@ Handles user data requests, profile updates, and user lifecycle events.
 
 ## Changelog
 
-### 2025-06-27
+### 2025-08-08
 - **added** channel: 'send' on channel 'analytics.warning' was added to service 'Analytics Service'
 - **changed** message: Reply message payload changed for operation 'receive' on channel 'analytics.report.request' in service 'Analytics Service'
 ```json
@@ -569,5 +569,5 @@ Handles user data requests, profile updates, and user lifecycle events.
 ```
 - **removed** channel: 'send' on channel 'analytics.alert' was removed from service 'Analytics Service'
 
-### 2025-06-27
+### 2025-08-08
 - **added** service: 'User Service' was added
