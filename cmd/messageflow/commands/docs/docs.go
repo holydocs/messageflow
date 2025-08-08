@@ -77,11 +77,22 @@ func (c *Command) run(cmd *cobra.Command, _ []string) error {
 		return fmt.Errorf("error creating D2 target: %w", err)
 	}
 
-	if err := docs.Generate(ctx, s, d2Target, title, outputDir); err != nil {
+	newChangelog, err := docs.Generate(ctx, s, d2Target, title, outputDir)
+	if err != nil {
 		return fmt.Errorf("error generating documentation: %w", err)
 	}
 
 	fmt.Printf("Documentation generated successfully in: %s\n", outputDir)
+
+	if newChangelog != nil && len(newChangelog.Changes) > 0 {
+		fmt.Printf("\nNew Changes Detected:\n")
+		for _, change := range newChangelog.Changes {
+			fmt.Printf("• %s %s: %s\n", change.Type, change.Category, change.Details)
+			if change.Diff != "" {
+				fmt.Println(change.Diff)
+			}
+		}
+	}
 
 	return nil
 }

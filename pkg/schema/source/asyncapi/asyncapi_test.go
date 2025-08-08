@@ -182,6 +182,61 @@ func TestExtractSchema(t *testing.T) {
 	assert.Equal(t, expected, actual)
 }
 
+func TestChangelogDetection(t *testing.T) {
+	schema1 := messageflow.Schema{
+		Services: []messageflow.Service{
+			{
+				Name: "Test Service",
+				Operation: []messageflow.Operation{
+					{
+						Action: messageflow.ActionReceive,
+						Channel: messageflow.Channel{
+							Name: "test.channel",
+							Messages: []messageflow.Message{
+								{
+									Name:    "TestMessage",
+									Payload: `{"field": "value1"}`,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	schema2 := messageflow.Schema{
+		Services: []messageflow.Service{
+			{
+				Name: "Test Service",
+				Operation: []messageflow.Operation{
+					{
+						Action: messageflow.ActionReceive,
+						Channel: messageflow.Channel{
+							Name: "test.channel",
+							Messages: []messageflow.Message{
+								{
+									Name:    "TestMessage",
+									Payload: `{"field": "value2"}`,
+								},
+							},
+						},
+					},
+				},
+			},
+		},
+	}
+
+	changelog := messageflow.CompareSchemas(schema1, schema2)
+
+	assert.NotEmpty(t, changelog.Changes, "Should detect changes between schemas")
+	assert.Len(t, changelog.Changes, 1, "Should detect one change")
+
+	change := changelog.Changes[0]
+	assert.Equal(t, messageflow.ChangeTypeChanged, change.Type, "Should be a change type")
+	assert.Equal(t, "message", change.Category, "Should be a message category")
+}
+
 func sortSchema(schema *messageflow.Schema) {
 	sort.Slice(schema.Services, func(i, j int) bool {
 		return schema.Services[i].Name < schema.Services[j].Name

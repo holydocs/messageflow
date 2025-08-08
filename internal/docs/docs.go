@@ -30,31 +30,33 @@ func Generate(
 	schema messageflow.Schema,
 	target messageflow.Target,
 	title, outputDir string,
-) error {
-	metadata, err := processMetadata(schema, outputDir)
+) (*messageflow.Changelog, error) {
+	metadata, newChangelog, err := processMetadata(schema, outputDir)
 	if err != nil {
-		return fmt.Errorf("error processing metadata: %w", err)
+		return nil, fmt.Errorf("error processing metadata: %w", err)
 	}
 
 	if err := generateDiagrams(ctx, schema, target, outputDir); err != nil {
-		return fmt.Errorf("error generating diagrams: %w", err)
+		return nil, fmt.Errorf("error generating diagrams: %w", err)
 	}
 
 	if err := createREADMEContent(schema, title, metadata.Changelogs, outputDir); err != nil {
-		return fmt.Errorf("error creating README content: %w", err)
+		return nil, fmt.Errorf("error creating README content: %w", err)
 	}
 
-	return nil
+	return newChangelog, nil
 }
 
-func processMetadata(schema messageflow.Schema, outputDir string) (*Metadata, error) {
+func processMetadata(schema messageflow.Schema, outputDir string) (*Metadata, *messageflow.Changelog, error) {
 	existingMetadata, err := readMetadata(outputDir)
 	if err != nil {
-		return nil, fmt.Errorf("error reading existing messageflow data: %w", err)
+		return nil, nil, fmt.Errorf("error reading existing messageflow data: %w", err)
 	}
 
-	var newChangelog *messageflow.Changelog
-	var existingChangelogs []messageflow.Changelog
+	var (
+		newChangelog       *messageflow.Changelog
+		existingChangelogs []messageflow.Changelog
+	)
 
 	if existingMetadata != nil {
 		changelog := messageflow.CompareSchemas(existingMetadata.Schema, schema)
@@ -74,10 +76,10 @@ func processMetadata(schema messageflow.Schema, outputDir string) (*Metadata, er
 	}
 
 	if err := writeMetadata(outputDir, metadata); err != nil {
-		return nil, fmt.Errorf("error writing messageflow data: %w", err)
+		return nil, nil, fmt.Errorf("error writing messageflow data: %w", err)
 	}
 
-	return &metadata, nil
+	return &metadata, newChangelog, nil
 }
 
 func generateDiagrams(
