@@ -456,12 +456,20 @@ func prepareServiceServicesPayload(s messageflow.Schema, serviceName string) ser
 		}
 	}
 
-	neighborServices := make([]messageflow.Service, 0)
-	neighborServiceMap := make(map[string]bool)
+	var (
+		neighborServices           = make([]messageflow.Service, 0)
+		neighborServiceMap         = make(map[string]bool)
+		mainServiceSendChannels    = make(map[string]bool)
+		mainServiceReceiveChannels = make(map[string]bool)
+	)
 
-	mainServiceChannels := make(map[string]bool)
 	for _, op := range mainService.Operation {
-		mainServiceChannels[op.Channel.Name] = true
+		switch op.Action {
+		case messageflow.ActionSend:
+			mainServiceSendChannels[op.Channel.Name] = true
+		case messageflow.ActionReceive:
+			mainServiceReceiveChannels[op.Channel.Name] = true
+		}
 	}
 
 	for _, service := range s.Services {
@@ -469,15 +477,27 @@ func prepareServiceServicesPayload(s messageflow.Schema, serviceName string) ser
 			continue
 		}
 
-		hasCommonChannel := false
+		isNeighbor := false
+
+		// Check if this service sends to channels that main service receives from
 		for _, op := range service.Operation {
-			if mainServiceChannels[op.Channel.Name] {
-				hasCommonChannel = true
+			if op.Action == messageflow.ActionSend && mainServiceReceiveChannels[op.Channel.Name] {
+				isNeighbor = true
 				break
 			}
 		}
 
-		if hasCommonChannel && !neighborServiceMap[service.Name] {
+		// Check if this service receives from channels that main service sends to
+		if !isNeighbor {
+			for _, op := range service.Operation {
+				if op.Action == messageflow.ActionReceive && mainServiceSendChannels[op.Channel.Name] {
+					isNeighbor = true
+					break
+				}
+			}
+		}
+
+		if isNeighbor && !neighborServiceMap[service.Name] {
 			neighborServices = append(neighborServices, service)
 			neighborServiceMap[service.Name] = true
 		}
